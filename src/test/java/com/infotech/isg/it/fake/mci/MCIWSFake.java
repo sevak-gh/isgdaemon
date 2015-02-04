@@ -30,10 +30,13 @@ import org.springframework.beans.factory.annotation.Value;
 public class MCIWSFake {
 
     private MCIProxy mciService;
-    private Endpoint ep;
+    private Endpoint ep1;
+    private Endpoint ep2;
 
-    @Value("${mci.url}")
-    private String url;
+    @Value("${mci1.url}")
+    private String url1;
+    @Value("${mci2.url}")
+    private String url2;
 
     @WebMethod(exclude = true)
     public void setServiceImpl(MCIProxy mciService) {
@@ -55,17 +58,21 @@ public class MCIWSFake {
 
     @WebMethod(exclude = true)
     public void publish() {
-        if ((ep != null) && (ep.isPublished())) {
-            throw new RuntimeException("EP already published");
+        if ((ep1 == null) || (!ep1.isPublished())) {
+            ep1 = Endpoint.publish(url1, this);
         }
-
-        ep = Endpoint.publish(url, this);
+        if ((ep2 == null) || (!ep2.isPublished())) {
+            ep2 = Endpoint.publish(url2, this);
+        }
     }
 
     @WebMethod(exclude = true)
     public void stop() {
-        if (ep != null) {
-            ep.stop();
+        if (ep1 != null) {
+            ep1.stop();
+        }
+        if (ep2 != null) {
+            ep2.stop();
         }
     }
 }

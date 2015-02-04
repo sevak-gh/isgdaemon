@@ -39,16 +39,16 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     private static final int MCI1000000 = 1000000;
     private List<Integer> cardAmounts = Arrays.asList(MCI10000, MCI20000, MCI50000, MCI100000, MCI200000, MCI500000, MCI1000000);
 
-    @Value("${mci.url}")
+    @Value("${mci2.url}")
     private String url;
 
-    @Value("${mci.username}")
+    @Value("${mci2.username}")
     private String username;
 
-    @Value("${mci.password}")
+    @Value("${mci2.password}")
     private String password;
 
-    @Value("${mci.namespace}")
+    @Value("${mci2.namespace}")
     private String namespace;
 
     @Autowired
@@ -57,7 +57,7 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     }
 
     private Long getMCIBalance(int amount) {
-        
+
         MCIProxy mciProxy = new MCIProxyImpl(url, username, password, namespace);
 
         MCIProxyGetTokenResponse tokenResponse = mciProxy.getToken();

@@ -1,11 +1,11 @@
 package com.infotech.isg.service;
 
 /**
- * ISG operator serive
+ * ISG operator status serive
  *
  * @author Sevak Gahribian
  */
-public interface ISGOperatorService {
+public interface ISGOperatorStatusService {
     public void getMCIStatus();
     public void getMTNStatus();
     public void getJiringStatus();

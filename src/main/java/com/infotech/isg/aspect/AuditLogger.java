@@ -18,7 +18,7 @@ public class AuditLogger {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuditLogger.class);
 
-    // around execution any public method in ISGBalanceService API
+    // around execution any public method in service API
     @Around("execution(public * com.infotech.isg.service..*.*(..))")
     public Object auditLog(ProceedingJoinPoint joinPoint) throws Throwable {
         long start = System.currentTimeMillis();

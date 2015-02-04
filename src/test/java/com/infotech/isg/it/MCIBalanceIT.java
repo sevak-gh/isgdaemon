@@ -187,7 +187,7 @@ public class MCIBalanceIT extends AbstractTestNGSpringContextTests {
             public MCIProxyGetRemainedBrokerRechargeResponse getRemainedBrokerRecharge(String token, int amount) {
                 throw new RuntimeException("something terrible happened!!!");
             }
- 
+
             @Override
             public MCIProxyRechargeResponse recharge(String token, String consumer, int amount, long trId) {
                 throw new UnsupportedOperationException("MCI recharge verify not implemented");

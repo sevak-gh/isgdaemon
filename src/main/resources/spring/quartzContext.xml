@@ -7,6 +7,7 @@
                              http://www.springframework.org/schema/context
                              http://www.springframework.org/schema/context/spring-context.xsd">
  
+    <!-- job schedule for balance checking -->
     <bean id="mciBalanceJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
         <property name="targetObject" ref="ISGBalanceService" />
         <property name="targetMethod" value="getMCIBalance" />
@@ -22,19 +23,50 @@
         <property name="targetMethod" value="getJiringBalance" />
     </bean>
 
-    <bean id="mciCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+    <bean id="mciBalanceCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="mciBalanceJob" />
         <property name="cronExpression" value="${isg.balance.schedule}" />
     </bean>
 
-     <bean id="mtnCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+     <bean id="mtnBalanceCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="mtnBalanceJob" />
         <property name="cronExpression" value="${isg.balance.schedule}" />
     </bean>
 
-    <bean id="jiringCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+    <bean id="jiringBalanceCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="jiringBalanceJob" />
         <property name="cronExpression" value="${isg.balance.schedule}" />
+    </bean>
+
+    <!-- job schedule for operator status monitoring -->
+    <bean id="mciStatusJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGOperatorStatusService" />
+        <property name="targetMethod" value="getMCIStatus" />
+    </bean>
+
+    <bean id="mtnStatusJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGOperatorStatusService" />
+        <property name="targetMethod" value="getMTNStatus" />
+    </bean>
+
+    <bean id="jiringStatusJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGOperatorStatusService" />
+        <property name="targetMethod" value="getJiringStatus" />
+    </bean>
+
+    <bean id="mciStatusCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="mciStatusJob" />
+        <property name="cronExpression" value="${isg.monitor.schedule}" />
+    </bean>
+
+     <bean id="mtnStatusCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="mtnStatusJob" />
+        <property name="cronExpression" value="${isg.monitor.schedule}" />
+    </bean>
+
+    <bean id="jiringStatusCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="jiringStatusJob" />
+        <property name="cronExpression" value="${isg.monitor.schedule}" />
     </bean>
 
     <bean  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
@@ -43,15 +75,21 @@
                 <ref bean="mciBalanceJob" />
                 <ref bean="mtnBalanceJob" />
                 <ref bean="jiringBalanceJob" />
-            </list>
+                <ref bean="mciStatusJob" />
+                <ref bean="mtnStatusJob" />
+                <ref bean="jiringStatusJob" />
+           </list>
         </property>
  
         <property name="triggers">
             <list>
-                <ref bean="mciCronTrigger" />
-                <ref bean="mtnCronTrigger" />
-                <ref bean="jiringCronTrigger" />
-            </list>
+                <ref bean="mciBalanceCronTrigger" />
+                <ref bean="mtnBalanceCronTrigger" />
+                <ref bean="jiringBalanceCronTrigger" />
+                <ref bean="mciStatusCronTrigger" />
+                <ref bean="mtnStatusCronTrigger" />
+                <ref bean="jiringStatusCronTrigger" />
+           </list>
         </property>
     </bean>
 

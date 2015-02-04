@@ -18,8 +18,8 @@ public class ExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
 
-    // around execution any public method in ISGBalanceService API
-    @Around("execution(public * com.infotech.isg.service.ISGBalanceService.*(..))")
+    // around execution any public method in service API
+    @Around("execution(public * com.infotech.isg.service..*.*(..))")
     public Object translateException(ProceedingJoinPoint joinPoint) throws Throwable {
         Object result = null;
         try {
