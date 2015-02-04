@@ -2,6 +2,8 @@ package com.infotech.isg.it.fake.mci;
 
 import com.infotech.isg.proxy.mci.MCIProxy;
 import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
+import com.infotech.isg.proxy.mci.MCIProxyRechargeResponse;
+import com.infotech.isg.proxy.mci.MCIProxyRechargeVerifyResponse;
 import com.infotech.isg.proxy.mci.MCIProxyGetRemainedBrokerRechargeResponse;
 
 import javax.jws.WebService;
@@ -47,6 +49,23 @@ public class MCIWSFake {
     @WebResult(name = "GetTokenResult")
     public MCIProxyGetTokenResponse getToken() {
         return mciService.getToken();
+    }
+
+    @WebMethod(operationName = "Recharge", action = "http://mci.service/Recharge")
+    @WebResult(name = "RechargeResult")
+    public MCIProxyRechargeResponse recharge(@WebParam(name = "BrokerID") String token,
+            @WebParam(name = "MobileNumber") String consumer,
+            @WebParam(name = "CardAmount") int amount,
+            @WebParam(name = "TransactionID") long trId) {
+        return mciService.recharge(token, consumer, amount, trId);
+    }
+
+    @WebMethod(operationName = "RechargeVerify", action = "http://mci.service/RechargeVerify")
+    @WebResult(name = "RechargeVerifyResult")
+    public MCIProxyRechargeVerifyResponse rechargeVerify(@WebParam(name = "BrokerID") String token,
+            @WebParam(name = "MobileNumber") String consumer,
+            @WebParam(name = "TransactionID") long trId) {
+        return mciService.rechargeVerify(token, consumer, trId);
     }
 
     @WebMethod(operationName = "GetRemainedBrokerRecharge", action = "http://mci.service/GetRemainedBrokerRecharge")

@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  */
 @Service("ISGOperatorStatusService")
 public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
-    private static final Logger LOG = LoggerFactory.getLogger(ISGBalanceServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ISGOperatorStatusServiceImpl.class);
 
     private final OperatorStatusRepository operatorStatusRepository;
 
