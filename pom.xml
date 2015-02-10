@@ -50,8 +50,8 @@
         <!-- quartz scheduler -->
         <quartz.version>2.2.1</quartz.version>
 
-        <!-- isgproxy helper -->
-        <isgproxy.version>1.0</isgproxy.version>
+        <!-- isgcommon helper -->
+        <isgcommon.version>1.0</isgcommon.version>
 
     </properties>      
 
@@ -192,8 +192,8 @@
 
         <dependency>
             <groupId>com.infotech.isg</groupId>
-            <artifactId>isgproxy</artifactId>
-            <version>${isgproxy.version}</version>
+            <artifactId>isgcommon</artifactId>
+            <version>${isgcommon.version}</version>
         </dependency>            
 
     </dependencies>
