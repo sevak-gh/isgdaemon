@@ -10,6 +10,10 @@ import com.infotech.isg.proxy.mci.MCIProxy;
 import com.infotech.isg.proxy.mci.MCIProxyImpl;
 import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
 import com.infotech.isg.proxy.mci.MCIProxyRechargeVerifyResponse;
+import com.infotech.isg.proxy.mtn.MTNProxy;
+import com.infotech.isg.proxy.mtn.MTNProxyImpl;
+import com.infotech.isg.proxy.mtn.MTNProxyResponse;
+
 
 import java.util.Date;
 import java.util.List;
@@ -33,16 +37,31 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
     private final TransactionRepository transactionRepository;
 
     @Value("${mci2.url}")
-    private String url;
+    private String mciUrl;
 
     @Value("${mci2.username}")
-    private String username;
+    private String mciUsername;
 
     @Value("${mci2.password}")
-    private String password;
+    private String mciPassword;
 
     @Value("${mci2.namespace}")
-    private String namespace;
+    private String mciNamespace;
+
+    @Value("${mtn.url}")
+    private String mtnUrl;
+
+    @Value("${mtn.username}")
+    private String mtnUsername;
+
+    @Value("${mtn.password}")
+    private String mtnPassword;
+
+    @Value("${mtn.vendor}")
+    private String mtnVendor;
+
+    @Value("${mtn.namespace}")
+    private String mtnNamespace;
 
     @Autowired
     public ISGVerifyServiceImpl(@Qualifier("JdbcTransactionRepository") TransactionRepository transactionRepository) {
@@ -60,7 +79,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
             return;
         }
 
-        MCIProxy mciProxy = new MCIProxyImpl(url, username, password, namespace);
+        MCIProxy mciProxy = new MCIProxyImpl(mciUrl, mciUsername, mciPassword, mciNamespace);
         for (Transaction transaction : transactions) {
             try {
                 MCIProxyGetTokenResponse getTokenResponse = mciProxy.getToken();
@@ -87,7 +106,31 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
 
     @Override
     public void mtnVerify() {
-        //TODO: to be implemented
+        // get MTN transactions set for STF, waiting to be verified
+        List<Transaction> transactions = transactionRepository.findBySTFProvider(1, Operator.MTN_ID);
+
+        if (transactions == null) {
+            // nothing to be verified
+            return;
+        }
+
+        MTNProxy mtnProxy = new MTNProxyImpl(mtnUrl, mtnUsername, mtnPassword, mtnVendor, mtnNamespace);
+        for (Transaction transaction : transactions) {
+            try {
+                MTNProxyResponse response = mtnProxy.verify(transaction.getId());
+                transaction.setStf((response.getResultCode().equals("0")) ? 2 : 3);
+                transaction.setOperatorResponseCode(Integer.parseInt(response.getResultCode()));
+                transaction.setOperatorResponse(response.getOrigResponseMessage());
+                transaction.setOperatorTId(response.getTransactionId());
+                transaction.setOperatorCommand(response.getCommandStatus());
+                transactionRepository.update(transaction);
+                LOG.info("MTN recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
+                         transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                         transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+            } catch (ProxyAccessException e) {
+                LOG.error("unable to VERIFY MTN recharge, verify canceled", e);
+            }
+        }
     }
 
     @Override

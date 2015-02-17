@@ -7,10 +7,15 @@ import com.infotech.isg.proxy.mci.MCIProxy;
 import com.infotech.isg.proxy.mci.MCIProxyImpl;
 import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
 import com.infotech.isg.proxy.mci.MCIProxyGetRemainedBrokerRechargeResponse;
+import com.infotech.isg.proxy.mtn.MTNProxy;
+import com.infotech.isg.proxy.mtn.MTNProxyImpl;
+import com.infotech.isg.proxy.mtn.MTNProxyResponse;
 
 import java.util.List;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,16 +45,31 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     private List<Integer> cardAmounts = Arrays.asList(MCI10000, MCI20000, MCI50000, MCI100000, MCI200000, MCI500000, MCI1000000);
 
     @Value("${mci2.url}")
-    private String url;
+    private String mciUrl;
 
     @Value("${mci2.username}")
-    private String username;
+    private String mciUsername;
 
     @Value("${mci2.password}")
-    private String password;
+    private String mciPassword;
 
     @Value("${mci2.namespace}")
-    private String namespace;
+    private String mciNamespace;
+
+    @Value("${mtn.url}")
+    private String mtnUrl;
+
+    @Value("${mtn.username}")
+    private String mtnUsername;
+
+    @Value("${mtn.password}")
+    private String mtnPassword;
+
+    @Value("${mtn.vendor}")
+    private String mtnVendor;
+
+    @Value("${mtn.namespace}")
+    private String mtnNamespace;
 
     @Autowired
     public ISGBalanceServiceImpl(@Qualifier("JdbcBalanceRepository") BalanceRepository balanceRepository) {
@@ -58,12 +78,12 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
 
     private Long getMCIBalance(int amount) {
 
-        MCIProxy mciProxy = new MCIProxyImpl(url, username, password, namespace);
+        MCIProxy mciProxy = new MCIProxyImpl(mciUrl, mciUsername, mciPassword, mciNamespace);
 
         MCIProxyGetTokenResponse tokenResponse = mciProxy.getToken();
         if ((tokenResponse == null)
             || (tokenResponse.getToken() == null)) {
-            throw new ISGException("invalid GetToken response");
+            throw new ISGException("invalid MCI GetToken response");
         }
 
         String token = tokenResponse.getToken();
@@ -73,11 +93,11 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
             || (balanceResponse.getResponse().size() < 2)
             || (balanceResponse.getCode() == null)
             || (balanceResponse.getDetail() == null)) {
-            throw new ISGException("invalid GetRemainedBrokerRecharge response");
+            throw new ISGException("invalid MCI GetRemainedBrokerRecharge response");
         }
 
         if (!balanceResponse.getCode().equalsIgnoreCase("0")) {
-            LOG.error("operator responds error({}) for getRemainedBrokerRecharge({})", balanceResponse.getCode(), amount);
+            LOG.debug("MCI operator responds error({}) for getRemainedBrokerRecharge({})", balanceResponse.getCode(), amount);
             return null;
         }
 
@@ -127,7 +147,32 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
 
     @Override
     public void getMTNBalance() {
-        LOG.error("getMTNBalance method not impleneted");
+        MTNProxy mtnProxy = new MTNProxyImpl(mtnUrl, mtnUsername, mtnPassword, mtnVendor, mtnNamespace);
+
+        MTNProxyResponse response = mtnProxy.getBalance();
+        if ((response.getResultCode() == null)
+            || (response.getOrigResponseMessage() == null)) {
+            throw new ISGException("invalid MTN get balance response");
+        }
+
+        if (!response.getResultCode().equals("0")) {
+            LOG.debug("MTN operator responds error({}) for get balance", response.getResultCode());
+            return;
+        }
+
+        Pattern pattern = Pattern.compile("[0-9]+");
+        Matcher m = pattern.matcher(response.getOrigResponseMessage());
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            sb.append(m.group());
+        }
+
+        if (sb.toString().isEmpty()) {
+            LOG.debug("MTN invalid get balance response: {}", response.getOrigResponseMessage());
+            return;
+        }
+
+        balanceRepository.updateMTN(Long.parseLong(sb.toString()), new Date());
     }
 
     @Override

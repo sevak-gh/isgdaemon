@@ -69,6 +69,37 @@
         <property name="cronExpression" value="${isg.monitor.schedule}" />
     </bean>
 
+    <!-- job schedule for verification -->
+    <bean id="mciVerifyJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGVerifyService" />
+        <property name="targetMethod" value="mciVerify" />
+    </bean>
+
+    <bean id="mtnVerifyJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGVerifyService" />
+        <property name="targetMethod" value="mtnVerify" />
+    </bean>
+
+    <bean id="jiringVerifyJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGVerifyService" />
+        <property name="targetMethod" value="jiringVerify" />
+    </bean>
+
+    <bean id="mciVerifyCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="mciVerifyJob" />
+        <property name="cronExpression" value="${isg.stf.schedule}" />
+    </bean>
+
+     <bean id="mtnVerifyCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="mtnVerifyJob" />
+        <property name="cronExpression" value="${isg.stf.schedule}" />
+    </bean>
+
+    <bean id="jiringVerifyCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="jiringVerifyJob" />
+        <property name="cronExpression" value="${isg.stf.schedule}" />
+    </bean>
+
     <bean  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
         <property name="jobDetails">
             <list>
@@ -78,7 +109,10 @@
                 <ref bean="mciStatusJob" />
                 <ref bean="mtnStatusJob" />
                 <ref bean="jiringStatusJob" />
-           </list>
+                <ref bean="mciVerifyJob" />
+                <ref bean="mtnVerifyJob" />
+                <ref bean="jiringVerifyJob" />
+          </list>
         </property>
  
         <property name="triggers">
@@ -89,7 +123,10 @@
                 <ref bean="mciStatusCronTrigger" />
                 <ref bean="mtnStatusCronTrigger" />
                 <ref bean="jiringStatusCronTrigger" />
-           </list>
+                <ref bean="mciVerifyCronTrigger" />
+                <ref bean="mtnVerifyCronTrigger" />
+                <ref bean="jiringVerifyCronTrigger" />
+          </list>
         </property>
     </bean>
 
