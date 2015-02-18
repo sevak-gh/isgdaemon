@@ -56,28 +56,16 @@ public class MCIBalanceIT extends AbstractTestNGSpringContextTests {
     @BeforeMethod
     public void initDB() {
         jdbcTemplate = new JdbcTemplate(dataSource);
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "info_topup_balance");
-        jdbcTemplate.update("insert into info_topup_balance ("
-                            + "MCI10000,MCI10000Timestamp,"
-                            + "MCI20000,MCI20000Timestamp,"
-                            + "MCI50000,MCI50000Timestamp,"
-                            + "MCI100000,MCI100000Timestamp,"
-                            + "MCI200000,MCI200000Timestamp,"
-                            + "MCI500000,MCI500000Timestamp,"
-                            + "MCI1000000,MCI1000000Timestamp,"
-                            + "MTN,MTNTimestamp,"
-                            + "Jiring,JiringTimestamp"
-                            + ") values("
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now(),"
-                            + "0, now()"
-                            + ")");
+        jdbcTemplate.update("update info_topup_balance set "
+                            + "MCI10000 = 0, MCI10000Timestamp = now(),"
+                            + "MCI20000 = 0, MCI20000Timestamp = now(),"
+                            + "MCI50000 = 0, MCI50000Timestamp = now(),"
+                            + "MCI100000 = 0, MCI100000Timestamp = now(),"
+                            + "MCI200000 = 0 ,MCI200000Timestamp = now(),"
+                            + "MCI500000 = 0, MCI500000Timestamp = now(),"
+                            + "MCI1000000 = 0, MCI1000000Timestamp = now(),"
+                            + "MTN = 0, MTNTimestamp = now(),"
+                            + "Jiring = 0, JiringTimestamp = now()");
     }
 
     @AfterMethod
