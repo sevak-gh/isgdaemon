@@ -17,6 +17,8 @@ import com.infotech.isg.proxy.mtn.MTNProxyResponse;
 
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -83,9 +85,17 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         for (Transaction transaction : transactions) {
             try {
                 MCIProxyGetTokenResponse getTokenResponse = mciProxy.getToken();
+                if (getTokenResponse.getToken() == null) {
+                    LOG.info("invalid token for verify from MCI");
+                    continue;
+                }
                 MCIProxyRechargeVerifyResponse response = mciProxy.rechargeVerify(getTokenResponse.getToken(),
                         transaction.getConsumer(),
                         transaction.getId());
+                if (response.getCode() == null) {
+                    LOG.info("invalid response for verify from MCI");
+                    continue;
+                }
                 if (Integer.parseInt(response.getCode()) == 0) {
                     transaction.setStf((Integer.parseInt(response.getTrCode()) == 0) ? 2 : 3);
                     transaction.setOperatorResponseCode(Integer.parseInt(response.getTrCode()));
@@ -118,7 +128,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         for (Transaction transaction : transactions) {
             try {
                 MTNProxyResponse response = mtnProxy.verify(transaction.getId());
-                transaction.setStf((response.getResultCode().equals("0")) ? 2 : 3);
+                transaction.setStf((isMTNTransactionVerified(response.getResultCode(), response.getOrigResponseMessage())) ? 2 : 3);
                 transaction.setOperatorResponseCode(Integer.parseInt(response.getResultCode()));
                 transaction.setOperatorResponse(response.getOrigResponseMessage());
                 transaction.setOperatorTId(response.getTransactionId());
@@ -130,6 +140,29 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
             } catch (ProxyAccessException e) {
                 LOG.error("unable to VERIFY MTN recharge, verify canceled", e);
             }
+        }
+    }
+
+    private boolean isMTNTransactionVerified(String resultCode, String originMessage) {
+        if (!resultCode.equals("0")) {
+            return false;
+        }
+
+        Pattern pattern = Pattern.compile("PROCESS: [0-9]+");
+        Matcher m = pattern.matcher(originMessage);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            sb.append(m.group());
+        }
+        String process = sb.toString();
+        String[] tokens = process.split(":");
+        if ((tokens == null) || (tokens.length < 2)) {
+            return false;
+        }
+        if (Integer.parseInt(tokens[1].trim()) == 1) {
+            return true;
+        } else {
+            return false;
         }
     }
 

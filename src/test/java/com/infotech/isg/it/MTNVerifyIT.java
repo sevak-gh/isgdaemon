@@ -145,4 +145,87 @@ public class MTNVerifyIT extends AbstractTestNGSpringContextTests {
         assertThat(serial, is(notNullValue()));
         assertThat(serial, is(mtnTransactionId));
     }
+
+    @Test
+    public void shouldSetStfFailedWhenVerifyProcessNOK() {
+        // arrange
+        jdbcTemplate.update("insert into info_topup_transactions ("
+                            + "provider,type,state,resnum,refnum,clientip,"
+                            + "amount,channel,consumer,bankcode,client,customerip,"
+                            + "trtime,status,operator,stf,stfresult"
+                            + ") values("
+                            + "1,1,'state','res','ref','1.1.1.1',20000,59,'09365067064','054',1,'2.2.2.2',now(),-1,1,1,0"
+                            + ")");
+        String mtnTransactionId = "T123456789";
+        String mtnOrigResponseMessage = "TID: 123456 BANK_TID: 321333 CHECK: 1 PROCESS: 23 NOTIFY: 1 ";
+        String mtnCommandStatus = "OK";
+        String mtnResultCode = "0";
+        MTNProxy mtnService = new MTNProxy() {
+            @Override
+            public MTNProxyResponse recharge(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("recharge not supported");
+            }
+
+            @Override
+            public MTNProxyResponse billPayment(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("bill payment not supported");
+            }
+
+            @Override
+            public MTNProxyResponse bulkTransfer(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("bulk transafer not supported");
+            }
+
+            @Override
+            public MTNProxyResponse wow(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("wow not supported");
+            }
+
+            @Override
+            public MTNProxyResponse postPaidWimax(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("post wimax not supported");
+            }
+
+            @Override
+            public MTNProxyResponse prePaidWimax(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("pre wimax not supported");
+            }
+
+            @Override
+            public MTNProxyResponse gprs(String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("gprs not supported");
+            }
+
+            @Override
+            public MTNProxyResponse verify(long trId) {
+                MTNProxyResponse response = new MTNProxyResponse();
+                response.setTransactionId(mtnTransactionId);
+                response.setOrigResponseMessage(mtnOrigResponseMessage);
+                response.setCommandStatus(mtnCommandStatus);
+                response.setResultCode(mtnResultCode);
+                return response;
+            }
+
+            @Override
+            public MTNProxyResponse getBalance() {
+                throw new UnsupportedOperationException("balance not supported");
+            }
+        };
+        mtnws.setServiceImpl(mtnService);
+        mtnws.publish();
+
+        // act
+        isgVerifyService.mtnVerify();
+
+        // assert
+        Integer stf = jdbcTemplate.queryForObject("select stf from info_topup_transactions", Integer.class);
+        assertThat(stf, is(notNullValue()));
+        assertThat(stf.intValue(), is(3));
+        String operatorResponse = jdbcTemplate.queryForObject("select oprresponse from info_topup_transactions", String.class);
+        assertThat(operatorResponse, is(notNullValue()));
+        assertThat(operatorResponse, is(mtnOrigResponseMessage));
+        String serial = jdbcTemplate.queryForObject("select oprtid from info_topup_transactions", String.class);
+        assertThat(serial, is(notNullValue()));
+        assertThat(serial, is(mtnTransactionId));
+    }
 }
