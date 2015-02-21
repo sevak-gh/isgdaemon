@@ -12,6 +12,10 @@ import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
 import com.infotech.isg.proxy.mtn.MTNProxy;
 import com.infotech.isg.proxy.mtn.MTNProxyImpl;
 import com.infotech.isg.proxy.mtn.MTNProxyResponse;
+import com.infotech.isg.proxy.jiring.JiringProxy;
+import com.infotech.isg.proxy.jiring.JiringProxyImpl;
+import com.infotech.isg.proxy.jiring.TCSRequest;
+import com.infotech.isg.proxy.jiring.TCSResponse;
 
 import java.util.Date;
 
@@ -30,6 +34,7 @@ import org.slf4j.LoggerFactory;
 @Service("ISGOperatorStatusService")
 public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
     private static final Logger LOG = LoggerFactory.getLogger(ISGOperatorStatusServiceImpl.class);
+    private static final Logger AUDITLOG = LoggerFactory.getLogger("isgdaemon.audit");
 
     private final OperatorStatusRepository operatorStatusRepository;
 
@@ -60,6 +65,18 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
     @Value("${mtn.namespace}")
     private String mtnNamespace;
 
+    @Value("${jiring.url}")
+    private String jiringUrl;
+
+    @Value("${jiring.username}")
+    private String jiringUsername;
+
+    @Value("${jiring.password}")
+    private String jiringPassword;
+
+    @Value("${jiring.brand}")
+    private String jiringBrand;
+
     @Autowired
     public ISGOperatorStatusServiceImpl(@Qualifier("JdbcOperatorStatusRepository") OperatorStatusRepository operatorStatusRepository) {
         this.operatorStatusRepository = operatorStatusRepository;
@@ -72,7 +89,7 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
         try {
             response = mciProxy.getToken();
         } catch (ProxyAccessException e) {
-            LOG.error("unable to get Token from MCI, operator status DOWN", e);
+            LOG.error("error to get Token from MCI, operator status DOWN", e);
         }
 
         OperatorStatus operatorStatus = new OperatorStatus();
@@ -87,6 +104,7 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
         }
 
         operatorStatusRepository.update(operatorStatus);
+        AUDITLOG.info("MCI status: {}", operatorStatus.getIsAvailable());
     }
 
     @Override
@@ -96,7 +114,7 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
         try {
             response = mtnProxy.getBalance();
         } catch (ProxyAccessException e) {
-            LOG.error("unable to get balance from MTN, operator status DOWN", e);
+            LOG.error("error to get balance from MTN, operator status DOWN", e);
         }
 
         OperatorStatus operatorStatus = new OperatorStatus();
@@ -111,10 +129,31 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
         }
 
         operatorStatusRepository.update(operatorStatus);
+        AUDITLOG.info("MTN status: {}", operatorStatus.getIsAvailable());
     }
 
     @Override
     public void getJiringStatus() {
-        //TODO: to be implemented
+        JiringProxy jiringProxy = new JiringProxyImpl(jiringUrl, jiringUsername, jiringPassword, jiringBrand);
+        TCSResponse response = null;
+        try {
+            response = jiringProxy.balance();
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get balance from Jiring, operator status DOWN", e);
+        }
+
+        OperatorStatus operatorStatus = new OperatorStatus();
+        operatorStatus.setId(Operator.JIRING_ID);
+        operatorStatus.setTimestamp(new Date());
+
+        if ((response == null)
+            || (response.getResult() == null)) {
+            operatorStatus.setIsAvailable(false);
+        } else {
+            operatorStatus.setIsAvailable(true);
+        }
+
+        operatorStatusRepository.update(operatorStatus);
+        AUDITLOG.info("Jiring status: {}", operatorStatus.getIsAvailable());
     }
 }

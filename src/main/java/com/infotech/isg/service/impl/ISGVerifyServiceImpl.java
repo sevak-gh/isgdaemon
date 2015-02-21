@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 @Service("ISGVerifyService")
 public class ISGVerifyServiceImpl implements ISGVerifyService {
     private static final Logger LOG = LoggerFactory.getLogger(ISGVerifyServiceImpl.class);
+    private static final Logger AUDITLOG = LoggerFactory.getLogger("isgdaemon.audit");
 
     private final TransactionRepository transactionRepository;
 
@@ -78,6 +79,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
 
         if (transactions == null) {
             // nothing to be verified
+            AUDITLOG.info("no MCI transaction to verify");
             return;
         }
 
@@ -86,30 +88,46 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
             try {
                 MCIProxyGetTokenResponse getTokenResponse = mciProxy.getToken();
                 if (getTokenResponse.getToken() == null) {
-                    LOG.info("invalid token for verify from MCI");
+                    LOG.error("invalid token from MCI to verify({},{}), try again", transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
                     continue;
                 }
                 MCIProxyRechargeVerifyResponse response = mciProxy.rechargeVerify(getTokenResponse.getToken(),
                         transaction.getConsumer(),
                         transaction.getId());
                 if (response.getCode() == null) {
-                    LOG.info("invalid response for verify from MCI");
+                    LOG.error("invalid response from MCI to verify({},{}), try again", transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
                     continue;
                 }
-                if (Integer.parseInt(response.getCode()) == 0) {
-                    transaction.setStf((Integer.parseInt(response.getTrCode()) == 0) ? 2 : 3);
+                if (response.getCode().equals("0")) {
+                    transaction.setStf((response.getTrCode().equals("0")) ? 2 : 3);
                     transaction.setOperatorResponseCode(Integer.parseInt(response.getTrCode()));
                     transaction.setOperatorResponse(response.getTrDetail());
                     transaction.setOperatorTId(response.getTrSerial());
                     transactionRepository.update(transaction);
-                    LOG.info("MCI recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
-                             transaction.getConsumer(), transaction.getId(), transaction.getStf(),
-                             transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+                    AUDITLOG.info("MCI recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
+                                  transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                                  transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+                } else if (response.getCode().equals("-1")) {
+                    // means transaction not registered
+                    transaction.setStf(3);
+                    transaction.setOperatorResponseCode(Integer.parseInt(response.getCode()));
+                    transaction.setOperatorResponse(response.getDetail());
+                    transactionRepository.update(transaction);
+                    AUDITLOG.info("MCI recharge verify[{},{}] resolved: [STF={}, code={}, detail={}]",
+                                  transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                                  transaction.getOperatorResponseCode(), transaction.getOperatorResponse());
+
                 } else {
-                    LOG.info("MCI recharge verify[{},{}] was not successful", transaction.getConsumer(), transaction.getId());
+                    // resule code not (0,-1), try again
+                    LOG.debug("MCI recharge verify[{},{}] reponse({}) not successful, try again",
+                              transaction.getConsumer(), transaction.getId(), response.getCode());
+                    AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
                 }
             } catch (ProxyAccessException e) {
-                LOG.error("unable to VERIFY MCI recharge, verify canceled", e);
+                LOG.error("error to VERIFY MCI recharge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
+                AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
             }
         }
     }
@@ -121,6 +139,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
 
         if (transactions == null) {
             // nothing to be verified
+            AUDITLOG.info("no MTN transaction to verify");
             return;
         }
 
@@ -128,17 +147,24 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         for (Transaction transaction : transactions) {
             try {
                 MTNProxyResponse response = mtnProxy.verify(transaction.getId());
+                if ((response.getResultCode() == null)
+                    || (response.getOrigResponseMessage() == null)) {
+                    LOG.error("invalid response from MTN to verify({},{}), try again", transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MTN recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                    continue;
+                }
                 transaction.setStf((isMTNTransactionVerified(response.getResultCode(), response.getOrigResponseMessage())) ? 2 : 3);
                 transaction.setOperatorResponseCode(Integer.parseInt(response.getResultCode()));
                 transaction.setOperatorResponse(response.getOrigResponseMessage());
                 transaction.setOperatorTId(response.getTransactionId());
                 transaction.setOperatorCommand(response.getCommandStatus());
                 transactionRepository.update(transaction);
-                LOG.info("MTN recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
-                         transaction.getConsumer(), transaction.getId(), transaction.getStf(),
-                         transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+                AUDITLOG.info("MTN recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
+                              transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                              transaction.getOperatorResponseCode(), transaction.getOperatorTId());
             } catch (ProxyAccessException e) {
-                LOG.error("unable to VERIFY MTN recharge, verify canceled", e);
+                LOG.error("error to VERIFY MTN recharge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
+                AUDITLOG.info("MTN recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
             }
         }
     }
@@ -159,7 +185,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         if ((tokens == null) || (tokens.length < 2)) {
             return false;
         }
-        if (Integer.parseInt(tokens[1].trim()) == 1) {
+        if (tokens[1].trim().equals("1")) {
             return true;
         } else {
             return false;

@@ -1,9 +1,7 @@
 package com.infotech.com.it;
 
 import com.infotech.isg.repository.OperatorStatusRepository;
-import com.infotech.isg.proxy.mtn.MTNProxy;
-import com.infotech.isg.proxy.mtn.MTNProxyResponse;
-import com.infotech.isg.it.fake.mtn.MTNWSFake;
+import com.infotech.isg.it.fake.jiring.JiringFake;
 import com.infotech.isg.service.ISGOperatorStatusService;
 
 import javax.sql.DataSource;
@@ -28,24 +26,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * integration test for MCI operator status service
+ * integration test for Jiring operator status service
  *
  * @author Sevak Gahribian
  */
 @ContextConfiguration(locations = { "classpath:spring/applicationContext.xml" })
-public class MTNStatusIT extends AbstractTestNGSpringContextTests {
+public class JiringStatusIT extends AbstractTestNGSpringContextTests {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MTNStatusIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JiringStatusIT.class);
 
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private DataSource dataSource;
 
-    // fake mci web service
+    // fake jiring web service
     // defined as spring managed bean so that app properties can be used
     @Autowired
-    MTNWSFake mtnws;
+    JiringFake jiringFake;
 
     @Autowired
     ISGOperatorStatusService isgOperatorStatusService;
@@ -60,19 +58,19 @@ public class MTNStatusIT extends AbstractTestNGSpringContextTests {
 
     @AfterMethod
     public void tearDown() {
-        mtnws.stop();
+        jiringFake.stop();
     }
 
     @Test
     public void shouldSetStatusDownIfOperatorNotAvailable() {
         // arrange
-        // MTN fake WS not published
+        // Jiring fake WS not published
 
         // act
-        isgOperatorStatusService.getMTNStatus();
+        isgOperatorStatusService.getJiringStatus();
 
         // assert
-        String status = jdbcTemplate.queryForObject("select status from info_topup_operator_last_status where id=1", String.class);
+        String status = jdbcTemplate.queryForObject("select status from info_topup_operator_last_status where id=3", String.class);
         assertThat(status, is(notNullValue()));
         assertThat(status, is("DOWN"));
     }

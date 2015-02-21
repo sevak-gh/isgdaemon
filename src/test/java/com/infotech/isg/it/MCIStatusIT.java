@@ -53,10 +53,9 @@ public class MCIStatusIT extends AbstractTestNGSpringContextTests {
     @BeforeMethod
     public void initDB() {
         jdbcTemplate = new JdbcTemplate(dataSource);
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "info_topup_operator_status", "info_topup_operator_last_status");
-        jdbcTemplate.update("insert into info_topup_operator_last_status (id,status,timestamp) values(1,'READY',now())");
-        jdbcTemplate.update("insert into info_topup_operator_last_status (id,status,timestamp) values(2,'READY',now())");
-        jdbcTemplate.update("insert into info_topup_operator_last_status (id,status,timestamp) values(3,'READY',now())");
+        jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=1");
+        jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=2");
+        jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=3");
     }
 
     @AfterMethod

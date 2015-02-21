@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
  *
  * @author Sevak Gharibian
  */
-@Aspect
-@Component
+//@Aspect
+//@Component
 public class AuditLogger {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AuditLogger.class);
+    private static final Logger LOG = LoggerFactory.getLogger("isgdaemon.audit");
 
     // around execution any public method in service API
     @Around("execution(public * com.infotech.isg.service..*.*(..))")

@@ -3,6 +3,7 @@ package com.infotech.isg.service.impl;
 import com.infotech.isg.service.ISGBalanceService;
 import com.infotech.isg.service.ISGException;
 import com.infotech.isg.repository.BalanceRepository;
+import com.infotech.isg.proxy.ProxyAccessException;
 import com.infotech.isg.proxy.mci.MCIProxy;
 import com.infotech.isg.proxy.mci.MCIProxyImpl;
 import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
@@ -10,6 +11,10 @@ import com.infotech.isg.proxy.mci.MCIProxyGetRemainedBrokerRechargeResponse;
 import com.infotech.isg.proxy.mtn.MTNProxy;
 import com.infotech.isg.proxy.mtn.MTNProxyImpl;
 import com.infotech.isg.proxy.mtn.MTNProxyResponse;
+import com.infotech.isg.proxy.jiring.JiringProxy;
+import com.infotech.isg.proxy.jiring.JiringProxyImpl;
+import com.infotech.isg.proxy.jiring.TCSRequest;
+import com.infotech.isg.proxy.jiring.TCSResponse;
 
 import java.util.List;
 import java.util.Arrays;
@@ -32,6 +37,7 @@ import org.slf4j.LoggerFactory;
 @Service("ISGBalanceService")
 public class ISGBalanceServiceImpl implements ISGBalanceService {
     private static final Logger LOG = LoggerFactory.getLogger(ISGBalanceServiceImpl.class);
+    private static final Logger AUDITLOG = LoggerFactory.getLogger("isgdaemon.audit");
 
     private final BalanceRepository balanceRepository;
 
@@ -71,6 +77,18 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     @Value("${mtn.namespace}")
     private String mtnNamespace;
 
+    @Value("${jiring.url}")
+    private String jiringUrl;
+
+    @Value("${jiring.username}")
+    private String jiringUsername;
+
+    @Value("${jiring.password}")
+    private String jiringPassword;
+
+    @Value("${jiring.brand}")
+    private String jiringBrand;
+
     @Autowired
     public ISGBalanceServiceImpl(@Qualifier("JdbcBalanceRepository") BalanceRepository balanceRepository) {
         this.balanceRepository = balanceRepository;
@@ -80,35 +98,42 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
 
         MCIProxy mciProxy = new MCIProxyImpl(mciUrl, mciUsername, mciPassword, mciNamespace);
 
-        MCIProxyGetTokenResponse tokenResponse = mciProxy.getToken();
-        if ((tokenResponse == null)
-            || (tokenResponse.getToken() == null)) {
-            throw new ISGException("invalid MCI GetToken response");
-        }
+        try {
+            MCIProxyGetTokenResponse tokenResponse = mciProxy.getToken();
+            if ((tokenResponse == null)
+                || (tokenResponse.getToken() == null)) {
+                LOG.error("invalid GetToken response from MCI for balance, try again");
+                return null;
+            }
 
-        String token = tokenResponse.getToken();
-        MCIProxyGetRemainedBrokerRechargeResponse balanceResponse = mciProxy.getRemainedBrokerRecharge(token, amount);
-        if ((balanceResponse == null)
-            || (balanceResponse.getResponse() == null)
-            || (balanceResponse.getResponse().size() < 2)
-            || (balanceResponse.getCode() == null)
-            || (balanceResponse.getDetail() == null)) {
-            throw new ISGException("invalid MCI GetRemainedBrokerRecharge response");
-        }
+            String token = tokenResponse.getToken();
+            MCIProxyGetRemainedBrokerRechargeResponse balanceResponse = mciProxy.getRemainedBrokerRecharge(token, amount);
+            if ((balanceResponse == null)
+                || (balanceResponse.getResponse() == null)
+                || (balanceResponse.getResponse().size() < 2)
+                || (balanceResponse.getCode() == null)
+                || (balanceResponse.getDetail() == null)) {
+                LOG.error("invalid GetRemainedBrokerRecharge response from MCI, try again");
+                return null;
+            }
 
-        if (!balanceResponse.getCode().equalsIgnoreCase("0")) {
-            LOG.debug("MCI operator responds error({}) for getRemainedBrokerRecharge({})", balanceResponse.getCode(), amount);
+            if (!balanceResponse.getCode().equals("0")) {
+                LOG.debug("MCI responds error({}) for getRemainedBrokerRecharge({})", balanceResponse.getCode(), amount);
+                return null;
+            }
+
+            return Long.valueOf(balanceResponse.getDetail());
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get MCI balance, try again", e);
             return null;
         }
-
-        return Long.valueOf(balanceResponse.getDetail());
     }
 
     @Override
     public void getMCIBalance() {
         for (Integer amount : cardAmounts) {
             Long balance = getMCIBalance(amount);
-            LOG.info("MCI remained balance for {}: {}", amount, balance);
+            AUDITLOG.info("MCI remained balance for {}: {}", amount, balance);
             if (balance != null) {
                 switch (amount) {
                     case MCI10000:
@@ -149,35 +174,81 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     public void getMTNBalance() {
         MTNProxy mtnProxy = new MTNProxyImpl(mtnUrl, mtnUsername, mtnPassword, mtnVendor, mtnNamespace);
 
-        MTNProxyResponse response = mtnProxy.getBalance();
-        if ((response.getResultCode() == null)
-            || (response.getOrigResponseMessage() == null)) {
-            throw new ISGException("invalid MTN get balance response");
-        }
+        try {
+            MTNProxyResponse response = mtnProxy.getBalance();
+            if ((response.getResultCode() == null)
+                || (response.getOrigResponseMessage() == null)) {
+                LOG.error("invalid get balance response from MTN, try again");
+                AUDITLOG.info("MTN get balance failed");
+                return;
+            }
 
-        if (!response.getResultCode().equals("0")) {
-            LOG.debug("MTN operator responds error({}) for get balance", response.getResultCode());
-            return;
-        }
+            if (!response.getResultCode().equals("0")) {
+                LOG.debug("MTN responds error({}) for get balance", response.getResultCode());
+                AUDITLOG.info("MTN get balance failed");
+                return;
+            }
 
-        Pattern pattern = Pattern.compile("[0-9]+");
-        Matcher m = pattern.matcher(response.getOrigResponseMessage());
-        StringBuilder sb = new StringBuilder();
-        while (m.find()) {
-            sb.append(m.group());
-        }
+            Pattern pattern = Pattern.compile("[0-9]+");
+            Matcher m = pattern.matcher(response.getOrigResponseMessage());
+            StringBuilder sb = new StringBuilder();
+            while (m.find()) {
+                sb.append(m.group());
+            }
 
-        if (sb.toString().isEmpty()) {
-            LOG.debug("MTN invalid get balance response: {}", response.getOrigResponseMessage());
-            return;
-        }
+            if (sb.toString().isEmpty()) {
+                LOG.error("MTN invalid get balance response: {}", response.getOrigResponseMessage());
+                AUDITLOG.info("MTN get balance failed");
+                return;
+            }
 
-        balanceRepository.updateMTN(Long.parseLong(sb.toString()), new Date());
+            balanceRepository.updateMTN(Long.parseLong(sb.toString()), new Date());
+            AUDITLOG.info("MTN get balance: {}", sb.toString());
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get MTN balance, try again", e);
+            AUDITLOG.info("MTN get balance failed");
+        }
     }
 
     @Override
     public void getJiringBalance() {
-        LOG.error("getJiringBalance method not impleneted");
+        JiringProxy jiringProxy = new JiringProxyImpl(jiringUrl, jiringUsername, jiringPassword, jiringBrand);
+        try {
+            TCSResponse response = jiringProxy.balance();
+
+            if ((response == null)
+                || (response.getResult() == null)
+                || (response.getMessage() == null)) {
+                LOG.error("invalid get balance response from Jiring, try again");
+                AUDITLOG.info("Jiring get balance failed");
+                return;
+            }
+
+            if (!response.getResult().equals("0")) {
+                LOG.debug("Jiring responds error({}) for get balance", response.getResult());
+                AUDITLOG.info("Jiring get balance failed");
+                return;
+            }
+
+            Pattern pattern = Pattern.compile("[0-9]+");
+            Matcher m = pattern.matcher(response.getMessage());
+            StringBuilder sb = new StringBuilder();
+            while (m.find()) {
+                sb.append(m.group());
+            }
+
+            if (sb.toString().isEmpty()) {
+                LOG.error("Jiring invalid get balance response: {}", response.getMessage());
+                AUDITLOG.info("Jiring get balance failed");
+                return;
+            }
+
+            balanceRepository.updateJiring(Long.parseLong(sb.toString()), new Date());
+            AUDITLOG.info("Jiring get balance: {}", sb.toString());
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get balance from Jiring", e);
+            AUDITLOG.info("Jiring get balance failed");
+        }
     }
 }
 
