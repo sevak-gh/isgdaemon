@@ -5,6 +5,8 @@
        xmlns:wss="http://jax-ws.dev.java.net/spring/servlet"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans.xsd
        http://jax-ws.dev.java.net/spring/core
@@ -13,23 +15,72 @@
        http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/aop
        http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/data/jpa
+       http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd
        http://jax-ws.dev.java.net/spring/servlet
        http://jax-ws.dev.java.net/spring/servlet.xsd">
 
-    <context:property-placeholder location="file:/etc/isg/isgdaemon.ini"/>
-
+    <import resource="datasource.xml"/>
     <import resource="quartzContext.xml"/>
 
-    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="${jdbc.driverClassName}"/>
-        <property name="url" value="${jdbc.url}"/>
-        <property name="username" value="${jdbc.username}"/>
-        <property name="password" value="${jdbc.password}"/>
-    </bean>
+    <context:property-placeholder location="classpath:spring/data-access.properties"/>
 
-    <context:component-scan base-package="com.infotech.isg"/>
+    <context:component-scan base-package="com.infotech.isg.service,
+                                          com.infotech.isg.aspect,
+                                          com.infotech.isg.it"/>
 
+    <tx:annotation-driven />
     <aop:aspectj-autoproxy />
+
+    <beans profile="jdbc">
+        <context:component-scan base-package="com.infotech.isg.repository.jdbc"/>
+        <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+            <property name="dataSource" ref="dataSource"/>
+        </bean>
+    </beans>
+
+    <beans profile="hibernate">
+        <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+            <property name="dataSource" ref="dataSource"/>
+            <property name="packagesToScan" value="com.infotech.isg.domain"/>
+            <property name="hibernateProperties">
+                <props>
+                    <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                    <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+                </props>
+            </property>
+        </bean>
+        <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+            <property name="sessionFactory" ref="sessionFactory" />
+        </bean>
+        <context:component-scan base-package="com.infotech.isg.repository.hibernate"/>
+    </beans>
+
+    <beans profile="default,jpa,springdatajpa">
+        <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+            <property name="dataSource" ref="dataSource" />
+            <property name="packagesToScan" value="com.infotech.isg.domain" />
+            <property name="jpaVendorAdapter">
+                <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+                    <property name="showSql" value="${hibernate.show_sql}" />
+                    <property name="databasePlatform" value="${hibernate.dialect}" />
+                </bean>
+            </property>
+        </bean>      
+        <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+            <property name="entityManagerFactory" ref="entityManagerFactory" />
+        </bean>
+    </beans>
+
+    <beans profile="jpa">
+        <context:component-scan base-package="com.infotech.isg.repository.jpa"/>
+    </beans>
+
+    <beans profile="default,springdatajpa">
+        <jpa:repositories base-package="com.infotech.isg.repository.springdatajpa"/>
+    </beans>
 
 </beans>
 

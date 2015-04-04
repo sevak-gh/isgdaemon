@@ -33,11 +33,6 @@ public class App {
         context = new ClassPathXmlApplicationContext("/spring/applicationContext.xml");
     }
 
-    private void go() {
-        ISGBalanceService balanceService = (ISGBalanceService) context.getBean("ISGBalanceService");
-        balanceService.getMCIBalance();
-    }
-
     private void goWithScheduler() {
         // do nothing
     }

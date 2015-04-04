@@ -95,10 +95,10 @@ public class JiringFake {
             TCSResponse response = null;
             if (request.getFunctionName().equals("SALESREQUEST")) {
                 LOG.debug("[jiring fake server] SALESREQUEST detected");
-                response = jiringProxy.salesRequest(request.getFunctionParam6(), Integer.parseInt(request.getFunctionParam2()));
+                response = jiringProxy.salesRequest(request.getFunctionParam6(), Integer.parseInt(request.getFunctionParam2()), "brand-Id");
             } else if (request.getFunctionName().equals("SALESREQUESTEXEC")) {
                 LOG.debug("[jiring fake server] SALESREQUESTEXEC detected");
-                response = jiringProxy.salesRequestExec(request.getFunctionParam1());
+                response = jiringProxy.salesRequestExec(request.getFunctionParam1(), false);
             } else if (request.getFunctionName().equals("BALANCE")) {
                 LOG.debug("[jiring fake server] BALANCE detected");
                 response = jiringProxy.balance();

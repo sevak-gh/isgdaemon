@@ -21,9 +21,9 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,15 +67,16 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
     private String mtnNamespace;
 
     @Autowired
-    public ISGVerifyServiceImpl(@Qualifier("JdbcTransactionRepository") TransactionRepository transactionRepository) {
+    public ISGVerifyServiceImpl(TransactionRepository transactionRepository) {
         this.transactionRepository = transactionRepository;
     }
 
     @Override
+    @Transactional
     public void mciVerify() {
 
         // get MCI transactions set for STF, waiting to be verified
-        List<Transaction> transactions = transactionRepository.findBySTFProvider(1, Operator.MCI_ID);
+        List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.MCI_ID);
 
         if (transactions == null) {
             // nothing to be verified
@@ -105,7 +106,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                     transaction.setOperatorResponseCode(Integer.parseInt(response.getTrCode()));
                     transaction.setOperatorResponse(response.getTrDetail());
                     transaction.setOperatorTId(response.getTrSerial());
-                    transactionRepository.update(transaction);
+                    transactionRepository.save(transaction);
                     AUDITLOG.info("MCI recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
                                   transaction.getConsumer(), transaction.getId(), transaction.getStf(),
                                   transaction.getOperatorResponseCode(), transaction.getOperatorTId());
@@ -114,7 +115,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                     transaction.setStf(3);
                     transaction.setOperatorResponseCode(Integer.parseInt(response.getCode()));
                     transaction.setOperatorResponse(response.getDetail());
-                    transactionRepository.update(transaction);
+                    transactionRepository.save(transaction);
                     AUDITLOG.info("MCI recharge verify[{},{}] resolved: [STF={}, code={}, detail={}]",
                                   transaction.getConsumer(), transaction.getId(), transaction.getStf(),
                                   transaction.getOperatorResponseCode(), transaction.getOperatorResponse());
@@ -133,9 +134,10 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
     }
 
     @Override
+    @Transactional
     public void mtnVerify() {
         // get MTN transactions set for STF, waiting to be verified
-        List<Transaction> transactions = transactionRepository.findBySTFProvider(1, Operator.MTN_ID);
+        List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.MTN_ID);
 
         if (transactions == null) {
             // nothing to be verified
@@ -158,7 +160,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                 transaction.setOperatorResponse(response.getOrigResponseMessage());
                 transaction.setOperatorTId(response.getTransactionId());
                 transaction.setOperatorCommand(response.getCommandStatus());
-                transactionRepository.update(transaction);
+                transactionRepository.save(transaction);
                 AUDITLOG.info("MTN recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
                               transaction.getConsumer(), transaction.getId(), transaction.getStf(),
                               transaction.getOperatorResponseCode(), transaction.getOperatorTId());
@@ -193,6 +195,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
     }
 
     @Override
+    @Transactional
     public void jiringVerify() {
         //TODO: to be implemented
     }

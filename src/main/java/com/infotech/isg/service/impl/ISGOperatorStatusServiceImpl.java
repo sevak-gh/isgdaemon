@@ -20,9 +20,9 @@ import com.infotech.isg.proxy.jiring.TCSResponse;
 import java.util.Date;
 
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,15 +74,13 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
     @Value("${jiring.password}")
     private String jiringPassword;
 
-    @Value("${jiring.brand}")
-    private String jiringBrand;
-
     @Autowired
-    public ISGOperatorStatusServiceImpl(@Qualifier("JdbcOperatorStatusRepository") OperatorStatusRepository operatorStatusRepository) {
+    public ISGOperatorStatusServiceImpl(OperatorStatusRepository operatorStatusRepository) {
         this.operatorStatusRepository = operatorStatusRepository;
     }
 
     @Override
+    @Transactional
     public void getMCIStatus() {
         MCIProxy mciProxy = new MCIProxyImpl(mciUrl, mciUsername, mciPassword, mciNamespace);
         MCIProxyGetTokenResponse response = null;
@@ -103,11 +101,12 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
             operatorStatus.setIsAvailable(true);
         }
 
-        operatorStatusRepository.update(operatorStatus);
+        operatorStatusRepository.save(operatorStatus);
         AUDITLOG.info("MCI status: {}", operatorStatus.getIsAvailable());
     }
 
     @Override
+    @Transactional
     public void getMTNStatus() {
         MTNProxy mtnProxy = new MTNProxyImpl(mtnUrl, mtnUsername, mtnPassword, mtnVendor, mtnNamespace);
         MTNProxyResponse response = null;
@@ -128,13 +127,14 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
             operatorStatus.setIsAvailable(true);
         }
 
-        operatorStatusRepository.update(operatorStatus);
+        operatorStatusRepository.save(operatorStatus);
         AUDITLOG.info("MTN status: {}", operatorStatus.getIsAvailable());
     }
 
     @Override
+    @Transactional
     public void getJiringStatus() {
-        JiringProxy jiringProxy = new JiringProxyImpl(jiringUrl, jiringUsername, jiringPassword, jiringBrand);
+        JiringProxy jiringProxy = new JiringProxyImpl(jiringUrl, jiringUsername, jiringPassword);
         TCSResponse response = null;
         try {
             response = jiringProxy.balance();
@@ -153,7 +153,7 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
             operatorStatus.setIsAvailable(true);
         }
 
-        operatorStatusRepository.update(operatorStatus);
+        operatorStatusRepository.save(operatorStatus);
         AUDITLOG.info("Jiring status: {}", operatorStatus.getIsAvailable());
     }
 }

@@ -23,9 +23,9 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,11 +86,8 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     @Value("${jiring.password}")
     private String jiringPassword;
 
-    @Value("${jiring.brand}")
-    private String jiringBrand;
-
     @Autowired
-    public ISGBalanceServiceImpl(@Qualifier("JdbcBalanceRepository") BalanceRepository balanceRepository) {
+    public ISGBalanceServiceImpl(BalanceRepository balanceRepository) {
         this.balanceRepository = balanceRepository;
     }
 
@@ -130,6 +127,7 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     }
 
     @Override
+    @Transactional
     public void getMCIBalance() {
         for (Integer amount : cardAmounts) {
             Long balance = getMCIBalance(amount);
@@ -171,6 +169,7 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     }
 
     @Override
+    @Transactional
     public void getMTNBalance() {
         MTNProxy mtnProxy = new MTNProxyImpl(mtnUrl, mtnUsername, mtnPassword, mtnVendor, mtnNamespace);
 
@@ -211,8 +210,9 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     }
 
     @Override
+    @Transactional
     public void getJiringBalance() {
-        JiringProxy jiringProxy = new JiringProxyImpl(jiringUrl, jiringUsername, jiringPassword, jiringBrand);
+        JiringProxy jiringProxy = new JiringProxyImpl(jiringUrl, jiringUsername, jiringPassword);
         try {
             TCSResponse response = jiringProxy.balance();
 
