@@ -115,6 +115,11 @@ public class MTNBalanceIT extends AbstractTestNGSpringContextTests {
             }
 
             @Override
+            public MTNProxyResponse gprsCombo(String consumer, int amount, long trId, int profileId) {
+                throw new UnsupportedOperationException("gprs combo not supported");
+            }
+
+            @Override
             public MTNProxyResponse verify(long trId) {
                 throw new UnsupportedOperationException("verify not supported");
             }
@@ -183,6 +188,11 @@ public class MTNBalanceIT extends AbstractTestNGSpringContextTests {
             @Override
             public MTNProxyResponse gprs(String consumer, int amount, long trId) {
                 throw new UnsupportedOperationException("gprs not supported");
+            }
+
+            @Override
+            public MTNProxyResponse gprsCombo(String consumer, int amount, long trId, int profileId) {
+                throw new UnsupportedOperationException("gprs combo not supported");
             }
 
             @Override

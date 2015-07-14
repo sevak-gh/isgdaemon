@@ -9,4 +9,5 @@ public interface ISGBalanceService {
     public void getMCIBalance();
     public void getMTNBalance();
     public void getJiringBalance();
+    public void getRightelBalance();
 }

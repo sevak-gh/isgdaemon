@@ -15,6 +15,9 @@ import com.infotech.isg.proxy.jiring.JiringProxy;
 import com.infotech.isg.proxy.jiring.JiringProxyImpl;
 import com.infotech.isg.proxy.jiring.TCSRequest;
 import com.infotech.isg.proxy.jiring.TCSResponse;
+import com.infotech.isg.proxy.rightel.RightelProxy;
+import com.infotech.isg.proxy.rightel.RightelProxyImpl;
+import com.infotech.isg.proxy.rightel.RightelProxyGetAccountBalanceResponse;
 
 import java.util.List;
 import java.util.Arrays;
@@ -85,6 +88,18 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
 
     @Value("${jiring.password}")
     private String jiringPassword;
+
+    @Value("${rightel.url}")
+    private String rightelUrl;
+
+    @Value("${rightel.username}")
+    private String rightelUsername;
+
+    @Value("${rightel.password}")
+    private String rightelPassword;
+
+    @Value("${rightel.namespace}")
+    private String rightelNamespace;
 
     @Autowired
     public ISGBalanceServiceImpl(BalanceRepository balanceRepository) {
@@ -248,6 +263,28 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
         } catch (ProxyAccessException e) {
             LOG.error("error to get balance from Jiring", e);
             AUDITLOG.info("Jiring get balance failed");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void getRightelBalance() {
+        RightelProxy rightelProxy = new RightelProxyImpl(rightelUrl, rightelUsername, rightelPassword, rightelNamespace);
+
+        try {
+            RightelProxyGetAccountBalanceResponse response = rightelProxy.getAccountBalance();
+
+            if (response.getErrorCode() != 0) {
+                LOG.debug("Rightel responds error({}) for get balance", response.getErrorCode());
+                AUDITLOG.info("Rightel get balance failed");
+                return;
+            }
+
+            balanceRepository.updateRightel(Long.parseLong(response.getValue()), new Date());
+            AUDITLOG.info("Rightel get balance: {}", response.getValue());
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get Rightel balance, try again", e);
+            AUDITLOG.info("Rightel get balance failed");
         }
     }
 }

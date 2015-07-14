@@ -6,6 +6,7 @@ import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
 import com.infotech.isg.proxy.mci.MCIProxyRechargeResponse;
 import com.infotech.isg.proxy.mci.MCIProxyRechargeVerifyResponse;
 import com.infotech.isg.proxy.mci.MCIProxyGetRemainedBrokerRechargeResponse;
+import com.infotech.isg.proxy.mci.MCIProxyRechargeCapabilityResponse;
 import com.infotech.isg.it.fake.mci.MCIWSFake;
 import com.infotech.isg.service.ISGBalanceService;
 
@@ -106,6 +107,11 @@ public class MCIBalanceIT extends AbstractTestNGSpringContextTests {
             public MCIProxyRechargeVerifyResponse rechargeVerify(String token, String consumer, long trId) {
                 throw new UnsupportedOperationException("MCI recharge verify not implemented");
             }
+ 
+            @Override
+            public MCIProxyRechargeCapabilityResponse rechargeCapability(String token, String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("MCI recharge capability not implemented");
+            }     
         };
         mciws.setServiceImpl(mciService);
         mciws.publish();
@@ -185,6 +191,11 @@ public class MCIBalanceIT extends AbstractTestNGSpringContextTests {
             public MCIProxyRechargeVerifyResponse rechargeVerify(String token, String consumer, long trId) {
                 throw new UnsupportedOperationException("MCI recharge verify not implemented");
             }
+  
+            @Override
+            public MCIProxyRechargeCapabilityResponse rechargeCapability(String token, String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("MCI recharge capability not implemented");
+            }       
         };
         mciws.setServiceImpl(mciService);
         mciws.publish();

@@ -8,6 +8,7 @@ import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
 import com.infotech.isg.proxy.mci.MCIProxyRechargeVerifyResponse;
 import com.infotech.isg.proxy.mci.MCIProxyRechargeResponse;
 import com.infotech.isg.proxy.mci.MCIProxyGetRemainedBrokerRechargeResponse;
+import com.infotech.isg.proxy.mci.MCIProxyRechargeCapabilityResponse;
 import com.infotech.isg.it.fake.mci.MCIWSFake;
 import com.infotech.isg.service.ISGVerifyService;
 
@@ -115,6 +116,11 @@ public class MCIVerifyIT extends AbstractTestNGSpringContextTests {
             @Override
             public MCIProxyGetRemainedBrokerRechargeResponse getRemainedBrokerRecharge(String token, int amount) {
                 throw new UnsupportedOperationException("MCI remained broker not implemented");
+            }
+
+            @Override
+            public MCIProxyRechargeCapabilityResponse rechargeCapability(String token, String consumer, int amount, long trId) {
+                throw new UnsupportedOperationException("MCI recharge capability not implemented");
             }
         };
         mciws.setServiceImpl(mciService);
