@@ -13,7 +13,9 @@ import com.infotech.isg.proxy.mci.MCIProxyRechargeVerifyResponse;
 import com.infotech.isg.proxy.mtn.MTNProxy;
 import com.infotech.isg.proxy.mtn.MTNProxyImpl;
 import com.infotech.isg.proxy.mtn.MTNProxyResponse;
-
+import com.infotech.isg.proxy.rightel.RightelProxy;
+import com.infotech.isg.proxy.rightel.RightelProxyImpl;
+import com.infotech.isg.proxy.rightel.RightelProxyInquiryChargeResponse;
 
 import java.util.Date;
 import java.util.List;
@@ -65,6 +67,18 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
 
     @Value("${mtn.namespace}")
     private String mtnNamespace;
+
+    @Value("${rightel.url}")
+    private String rightelUrl;
+
+    @Value("${rightel.username}")
+    private String rightelUsername;
+
+    @Value("${rightel.password}")
+    private String rightelPassword;
+
+    @Value("${rightel.namespace}")
+    private String rightelNamespace;
 
     @Autowired
     public ISGVerifyServiceImpl(TransactionRepository transactionRepository) {
@@ -199,4 +213,46 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
     public void jiringVerify() {
         //TODO: to be implemented
     }
+    
+    @Override
+    @Transactional
+    public void rightelVerify() {
+
+        // get Rightel transactions set for STF, waiting to be verified
+        List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.RIGHTEL_ID);
+
+        if (transactions == null) {
+            // nothing to be verified
+            AUDITLOG.info("no Rightel transaction to verify");
+            return;
+        }
+
+        RightelProxy rightelProxy = new RightelProxyImpl(rightelUrl, rightelUsername, rightelPassword, rightelNamespace);
+        for (Transaction transaction : transactions) {
+            try {
+                RightelProxyInquiryChargeResponse response = rightelProxy.inquiryCharge(transaction.getId());
+                if ((response.getErrorCode() == 0)
+                    && ((response.getStatus() == 6) 
+                        || (response.getStatus() == 4)
+                        || (response.getStatus() == 7))) {
+                    transaction.setStf((response.getStatus() == 6) ? 3 : 2);
+                    transaction.setOperatorResponseCode(response.getStatus());
+                    transaction.setOperatorResponse(response.getChargeResponseDesc());
+                    transaction.setOperatorTId(response.getRequestId());
+                    transactionRepository.save(transaction);
+                    AUDITLOG.info("Rightel charge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
+                                  transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                                  transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+                } else {
+                    // not verified, try again
+                    LOG.debug("Rightel charge not verified[{},{}] reponse({}), try again",
+                              transaction.getConsumer(), transaction.getId(), response.getErrorCode());
+                    AUDITLOG.info("Rightel charge not verified({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                }
+            } catch (ProxyAccessException e) {
+                LOG.error("error to VERIFY Rightel charge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
+                AUDITLOG.info("Rightel charge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+            }
+        }
+    }        
 }

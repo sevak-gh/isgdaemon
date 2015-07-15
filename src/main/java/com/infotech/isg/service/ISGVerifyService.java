@@ -9,4 +9,5 @@ public interface ISGVerifyService {
     public void mciVerify();
     public void mtnVerify();
     public void jiringVerify();
+    public void rightelVerify();
 }
