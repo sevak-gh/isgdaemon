@@ -1,9 +1,7 @@
 package com.infotech.com.it;
 
 import com.infotech.isg.repository.OperatorStatusRepository;
-import com.infotech.isg.proxy.mtn.MTNProxy;
-import com.infotech.isg.proxy.mtn.MTNProxyResponse;
-import com.infotech.isg.it.fake.mtn.MTNWSFake;
+import com.infotech.isg.it.fake.rightel.RightelWSFake;
 import com.infotech.isg.service.ISGOperatorStatusService;
 
 import javax.sql.DataSource;
@@ -28,24 +26,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * integration test for MTN operator status service
+ * integration test for Rightel operator status service
  *
  * @author Sevak Gahribian
  */
 @ContextConfiguration(locations = { "classpath:spring/applicationContext.xml" })
-public class MTNStatusIT extends AbstractTestNGSpringContextTests {
+public class RightelStatusIT extends AbstractTestNGSpringContextTests {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MTNStatusIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RightelStatusIT.class);
 
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private DataSource dataSource;
 
-    // fake mtn web service
+    // fake rightel web service
     // defined as spring managed bean so that app properties can be used
     @Autowired
-    MTNWSFake mtnws;
+    RightelWSFake rightelws;
 
     @Autowired
     ISGOperatorStatusService isgOperatorStatusService;
@@ -56,23 +54,24 @@ public class MTNStatusIT extends AbstractTestNGSpringContextTests {
         jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=1");
         jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=2");
         jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=3");
+        jdbcTemplate.update("update info_topup_operator_last_status set status='READY',timestamp=now() where id=4");
     }
 
     @AfterMethod
     public void tearDown() {
-        mtnws.stop();
+        rightelws.stop();
     }
 
     @Test
     public void shouldSetStatusDownIfOperatorNotAvailable() {
         // arrange
-        // MTN fake WS not published
+        // Rightel fake WS not published
 
         // act
-        isgOperatorStatusService.getMTNStatus();
+        isgOperatorStatusService.getRightelStatus();
 
         // assert
-        String status = jdbcTemplate.queryForObject("select status from info_topup_operator_last_status where id=1", String.class);
+        String status = jdbcTemplate.queryForObject("select status from info_topup_operator_last_status where id=4", String.class);
         assertThat(status, is(notNullValue()));
         assertThat(status, is("DOWN"));
     }

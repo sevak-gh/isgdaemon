@@ -16,6 +16,9 @@ import com.infotech.isg.proxy.jiring.JiringProxy;
 import com.infotech.isg.proxy.jiring.JiringProxyImpl;
 import com.infotech.isg.proxy.jiring.TCSRequest;
 import com.infotech.isg.proxy.jiring.TCSResponse;
+import com.infotech.isg.proxy.rightel.RightelProxy;
+import com.infotech.isg.proxy.rightel.RightelProxyImpl;
+import com.infotech.isg.proxy.rightel.RightelProxyGetAccountBalanceResponse;
 
 import java.util.Date;
 
@@ -73,6 +76,18 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
 
     @Value("${jiring.password}")
     private String jiringPassword;
+
+    @Value("${rightel.url}")
+    private String rightelUrl;
+
+    @Value("${rightel.username}")
+    private String rightelUsername;
+
+    @Value("${rightel.password}")
+    private String rightelPassword;
+
+    @Value("${rightel.namespace}")
+    private String rightelNamespace;
 
     @Autowired
     public ISGOperatorStatusServiceImpl(OperatorStatusRepository operatorStatusRepository) {
@@ -155,5 +170,30 @@ public class ISGOperatorStatusServiceImpl implements ISGOperatorStatusService {
 
         operatorStatusRepository.save(operatorStatus);
         AUDITLOG.info("Jiring status: {}", operatorStatus.getIsAvailable());
+    }
+
+    @Override
+    @Transactional
+    public void getRightelStatus() {
+        RightelProxy rightelProxy = new RightelProxyImpl(rightelUrl, rightelUsername, rightelPassword, rightelNamespace);
+        RightelProxyGetAccountBalanceResponse response = null;
+        try {
+            response = rightelProxy.getAccountBalance();
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get balance from Rightel, operator status DOWN", e);
+        }
+
+        OperatorStatus operatorStatus = new OperatorStatus();
+        operatorStatus.setId(Operator.RIGHTEL_ID);
+        operatorStatus.setTimestamp(new Date());
+
+        if ((response != null) && (response.getErrorCode() == 0)) { 
+            operatorStatus.setIsAvailable(true);
+        } else {
+            operatorStatus.setIsAvailable(false);
+        }
+
+        operatorStatusRepository.save(operatorStatus);
+        AUDITLOG.info("Rightel status: {}", operatorStatus.getIsAvailable());
     }
 }

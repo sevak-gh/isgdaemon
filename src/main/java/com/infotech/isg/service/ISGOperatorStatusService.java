@@ -9,4 +9,5 @@ public interface ISGOperatorStatusService {
     public void getMCIStatus();
     public void getMTNStatus();
     public void getJiringStatus();
+    public void getRightelStatus();
 }
