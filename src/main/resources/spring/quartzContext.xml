@@ -64,6 +64,11 @@
         <property name="targetMethod" value="getJiringStatus" />
     </bean>
 
+    <bean id="rightelStatusJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGOperatorStatusService" />
+        <property name="targetMethod" value="getRightelStatus" />
+    </bean>
+
     <bean id="mciStatusCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="mciStatusJob" />
         <property name="cronExpression" value="${isg.monitor.schedule}" />
@@ -76,6 +81,11 @@
 
     <bean id="jiringStatusCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="jiringStatusJob" />
+        <property name="cronExpression" value="${isg.monitor.schedule}" />
+    </bean>
+
+    <bean id="rightelStatusCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="rightelStatusJob" />
         <property name="cronExpression" value="${isg.monitor.schedule}" />
     </bean>
 
@@ -130,6 +140,7 @@
                 <ref bean="mciStatusJob" />
                 <ref bean="mtnStatusJob" />
                 <ref bean="jiringStatusJob" />
+                <ref bean="rightelStatusJob" />
                 <ref bean="mciVerifyJob" />
                 <ref bean="mtnVerifyJob" />
                 <ref bean="jiringVerifyJob" />
@@ -146,6 +157,7 @@
                 <ref bean="mciStatusCronTrigger" />
                 <ref bean="mtnStatusCronTrigger" />
                 <ref bean="jiringStatusCronTrigger" />
+                <ref bean="rightelStatusCronTrigger" />
                 <ref bean="mciVerifyCronTrigger" />
                 <ref bean="mtnVerifyCronTrigger" />
                 <ref bean="jiringVerifyCronTrigger" />
