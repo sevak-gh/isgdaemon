@@ -104,7 +104,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                 MCIProxyGetTokenResponse getTokenResponse = mciProxy.getToken();
                 if (getTokenResponse.getToken() == null) {
                     LOG.error("invalid token from MCI to verify({},{}), try again", transaction.getConsumer(), transaction.getId());
-                    AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MCI recharge verify({},{}) failed, no token, try again", transaction.getConsumer(), transaction.getId());
                     continue;
                 }
                 MCIProxyRechargeVerifyResponse response = mciProxy.rechargeVerify(getTokenResponse.getToken(),
@@ -112,7 +112,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                         transaction.getId());
                 if (response.getCode() == null) {
                     LOG.error("invalid response from MCI to verify({},{}), try again", transaction.getConsumer(), transaction.getId());
-                    AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MCI recharge verify({},{}) failed, response code null ,try again", transaction.getConsumer(), transaction.getId());
                     continue;
                 }
                 if (response.getCode().equals("0")) {
@@ -142,7 +142,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                 }
             } catch (ProxyAccessException e) {
                 LOG.error("error to VERIFY MCI recharge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
-                AUDITLOG.info("MCI recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                AUDITLOG.info("MCI recharge verify({},{}) failed, connection error, try again", transaction.getConsumer(), transaction.getId());
             }
         }
     }
@@ -166,7 +166,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                 if ((response.getResultCode() == null)
                     || (response.getOrigResponseMessage() == null)) {
                     LOG.error("invalid response from MTN to verify({},{}), try again", transaction.getConsumer(), transaction.getId());
-                    AUDITLOG.info("MTN recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MTN recharge verify({},{}) failed, no response, try again", transaction.getConsumer(), transaction.getId());
                     continue;
                 }
                 transaction.setStf((isMTNTransactionVerified(response.getResultCode(), response.getOrigResponseMessage())) ? 2 : 3);
@@ -180,7 +180,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                               transaction.getOperatorResponseCode(), transaction.getOperatorTId());
             } catch (ProxyAccessException e) {
                 LOG.error("error to VERIFY MTN recharge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
-                AUDITLOG.info("MTN recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                AUDITLOG.info("MTN recharge verify({},{}) failed, connection error, try again", transaction.getConsumer(), transaction.getId());
             }
         }
     }
@@ -251,7 +251,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
                 }
             } catch (ProxyAccessException e) {
                 LOG.error("error to VERIFY Rightel charge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
-                AUDITLOG.info("Rightel charge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                AUDITLOG.info("Rightel charge verify({},{}) failed, connection error, try again", transaction.getConsumer(), transaction.getId());
             }
         }
     }        
