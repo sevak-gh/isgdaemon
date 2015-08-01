@@ -10,15 +10,14 @@
     <context:property-placeholder location="file:/etc/isg/isgdaemon.ini" ignore-unresolvable="true"/>
     <context:property-placeholder location="classpath:spring/data-access.properties" ignore-unresolvable="true"/>
 
-<!--
     <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
         <property name="driverClassName" value="${jdbc.driverClassName}"/>
         <property name="url" value="${jdbc.url}"/>
         <property name="username" value="${jdbc.username}"/>
         <property name="password" value="${jdbc.password}"/>
     </bean>
--->
 
+<!--
     <bean id="dataSource" class="org.apache.tomcat.jdbc.pool.DataSource" destroy-method="close">
         <property name="driverClassName" value="${jdbc.driverClassName}" />
         <property name="url" value="${jdbc.url}" />
@@ -27,8 +26,9 @@
         <property name="initialSize" value="${connectionpool.initialSize}" />
         <property name="maxActive" value="${connectionpool.maxActive}" />
         <property name="maxIdle" value="${connectionpool.maxIdle}" />
-        <property name="minIdle" value="${connectionpool.minIdle}" />
+        <property name="minIdle" value="${connectionpool.minIdle}" />    
     </bean>
+-->
 
 </beans>
 
