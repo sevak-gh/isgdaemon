@@ -3,7 +3,9 @@ package com.infotech.isg.service.impl;
 import com.infotech.isg.service.ISGBalanceService;
 import com.infotech.isg.service.ISGException;
 import com.infotech.isg.repository.BalanceRepository;
+import com.infotech.isg.repository.BalanceLogRepository;
 import com.infotech.isg.proxy.ProxyAccessException;
+import com.infotech.isg.domain.BalanceLog;
 import com.infotech.isg.proxy.mci.MCIProxy;
 import com.infotech.isg.proxy.mci.MCIProxyImpl;
 import com.infotech.isg.proxy.mci.MCIProxyGetTokenResponse;
@@ -43,6 +45,7 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     private static final Logger AUDITLOG = LoggerFactory.getLogger("isgdaemon.audit");
 
     private final BalanceRepository balanceRepository;
+    private final BalanceLogRepository balanceLogRepository;
 
     private static final int MCI10000 = 10000;
     private static final int MCI20000 = 20000;
@@ -102,8 +105,9 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     private String rightelNamespace;
 
     @Autowired
-    public ISGBalanceServiceImpl(BalanceRepository balanceRepository) {
+    public ISGBalanceServiceImpl(BalanceRepository balanceRepository, BalanceLogRepository balanceLogRepository) {
         this.balanceRepository = balanceRepository;
+        this.balanceLogRepository = balanceLogRepository;
     }
 
     private Long getMCIBalance(int amount) {
@@ -144,6 +148,7 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
     @Override
     @Transactional
     public void getMCIBalance() {
+        BalanceLog balanceLog = new BalanceLog();
         for (Integer amount : cardAmounts) {
             Long balance = getMCIBalance(amount);
             AUDITLOG.info("MCI remained balance for {}: {}", amount, balance);
@@ -151,36 +156,51 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
                 switch (amount) {
                     case MCI10000:
                         balanceRepository.updateMCI10000(balance.longValue(), new Date());
+                        balanceLog.setMci10000(balance);
+                        balanceLog.setMci10000Timestamp(new Date());
                         break;
 
                     case MCI20000:
                         balanceRepository.updateMCI20000(balance.longValue(), new Date());
-                        break;
+                        balanceLog.setMci20000(balance);
+                        balanceLog.setMci20000Timestamp(new Date());
+                       break;
 
                     case MCI50000:
                         balanceRepository.updateMCI50000(balance.longValue(), new Date());
-                        break;
+                        balanceLog.setMci50000(balance);
+                        balanceLog.setMci50000Timestamp(new Date());
+                       break;
 
                     case MCI100000:
                         balanceRepository.updateMCI100000(balance.longValue(), new Date());
-                        break;
+                        balanceLog.setMci100000(balance);
+                        balanceLog.setMci100000Timestamp(new Date());
+                       break;
 
                     case MCI200000:
                         balanceRepository.updateMCI200000(balance.longValue(), new Date());
-                        break;
+                        balanceLog.setMci200000(balance);
+                        balanceLog.setMci200000Timestamp(new Date());
+                       break;
 
                     case MCI500000:
                         balanceRepository.updateMCI500000(balance.longValue(), new Date());
-                        break;
+                        balanceLog.setMci500000(balance);
+                        balanceLog.setMci500000Timestamp(new Date());
+                       break;
 
                     case MCI1000000:
                         balanceRepository.updateMCI1000000(balance.longValue(), new Date());
-                        break;
+                        balanceLog.setMci1000000(balance);
+                        balanceLog.setMci1000000Timestamp(new Date());
+                       break;
 
                     default: break;
                 }
             }
         }
+        balanceLogRepository.save(balanceLog);
     }
 
     @Override
@@ -216,8 +236,14 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
                 return;
             }
 
-            balanceRepository.updateMTN(Long.parseLong(sb.toString()), new Date());
-            AUDITLOG.info("MTN get balance: {}", sb.toString());
+            long balance = Long.parseLong(sb.toString());
+            balanceRepository.updateMTN(balance, new Date());
+            AUDITLOG.info("MTN get balance: {}", balance);
+
+            BalanceLog balanceLog = new BalanceLog();
+            balanceLog.setMtn(balance);
+            balanceLog.setMtnTimestamp(new Date());
+            balanceLogRepository.save(balanceLog);
         } catch (ProxyAccessException e) {
             LOG.error("error to get MTN balance, try again", e);
             AUDITLOG.info("MTN get balance failed");
@@ -258,9 +284,15 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
                 return;
             }
 
-            balanceRepository.updateJiring(Long.parseLong(sb.toString()), new Date());
+            long balance = Long.parseLong(sb.toString());
+            balanceRepository.updateJiring(balance, new Date());
             AUDITLOG.info("Jiring get balance: {}", sb.toString());
-        } catch (ProxyAccessException e) {
+
+            BalanceLog balanceLog = new BalanceLog();
+            balanceLog.setJiring(balance);
+            balanceLog.setJiringTimestamp(new Date());
+            balanceLogRepository.save(balanceLog);
+       } catch (ProxyAccessException e) {
             LOG.error("error to get balance from Jiring", e);
             AUDITLOG.info("Jiring get balance failed");
         }
@@ -280,8 +312,14 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
                 return;
             }
 
-            balanceRepository.updateRightel(Long.parseLong(response.getValue()), new Date());
+            long balance = Long.parseLong(response.getValue());
+            balanceRepository.updateRightel(balance, new Date());
             AUDITLOG.info("Rightel get balance: {}", response.getValue());
+
+            BalanceLog balanceLog = new BalanceLog();
+            balanceLog.setRightel(balance);
+            balanceLog.setRightelTimestamp(new Date());
+            balanceLogRepository.save(balanceLog);
         } catch (ProxyAccessException e) {
             LOG.error("error to get Rightel balance, try again", e);
             AUDITLOG.info("Rightel get balance failed");

@@ -46,8 +46,9 @@ public class RightelWSFake {
     @WebMethod(operationName = "SubmitChargeRequest")
     @WebResult(name = "SubmitChargeRequestResult")
     public RightelProxySubmitChargeRequestResponse submitChargeRequest(@WebParam(name = "telno") String consumer,
-                                                                       @WebParam(name = "amount") int amount) {
-        return rightelService.submitChargeRequest(consumer, amount);
+                                                                       @WebParam(name = "amount") int amount,
+                                                                       @WebParam(name = "chargeChanel") int channel) {
+        return rightelService.submitChargeRequest(consumer, amount, channel);
     }
 
     @WebMethod(operationName = "ConfirmChargeRequest")

@@ -94,7 +94,7 @@ public class RightelVerifyIT extends AbstractTestNGSpringContextTests {
         RightelProxy rightelService = new RightelProxy() {
                        
             @Override
-            public RightelProxySubmitChargeRequestResponse submitChargeRequest(String consumer, int amount) {
+            public RightelProxySubmitChargeRequestResponse submitChargeRequest(String consumer, int amount, int channel) {
                 throw new UnsupportedOperationException("submit charge request not supported");
             }
 
@@ -176,7 +176,7 @@ public class RightelVerifyIT extends AbstractTestNGSpringContextTests {
         RightelProxy rightelService = new RightelProxy() {
                        
             @Override
-            public RightelProxySubmitChargeRequestResponse submitChargeRequest(String consumer, int amount) {
+            public RightelProxySubmitChargeRequestResponse submitChargeRequest(String consumer, int amount, int channel) {
                 throw new UnsupportedOperationException("submit charge request not supported");
             }
 

@@ -78,7 +78,7 @@ public class JiringBalanceIT extends AbstractTestNGSpringContextTests {
         String jiringResponseMessage = "your jiring balance is 519,676,300 IRR.";
         JiringProxy jiringProxy = new JiringProxy() {
             @Override
-            public TCSResponse salesRequest(String consumer, int amount, String brandId) {
+            public TCSResponse salesRequest(String consumer, int amount, String brandId, String sender) {
                 throw new UnsupportedOperationException("jiring salesRequest not implemented");
             }
 
@@ -115,7 +115,7 @@ public class JiringBalanceIT extends AbstractTestNGSpringContextTests {
         String jiringResponseMessage = "your jiring balance is jingul IRR.";
         JiringProxy jiringProxy = new JiringProxy() {
             @Override
-            public TCSResponse salesRequest(String consumer, int amount, String brandId) {
+            public TCSResponse salesRequest(String consumer, int amount, String brandId, String sender) {
                 throw new UnsupportedOperationException("jiring salesRequest not implemented");
             }
 

@@ -95,7 +95,8 @@ public class JiringFake {
             TCSResponse response = null;
             if (request.getFunctionName().equals("SALESREQUEST")) {
                 LOG.debug("[jiring fake server] SALESREQUEST detected");
-                response = jiringProxy.salesRequest(request.getFunctionParam6(), Integer.parseInt(request.getFunctionParam2()), "brand-Id");
+                response = jiringProxy.salesRequest(request.getFunctionParam6(), Integer.parseInt(request.getFunctionParam2()), 
+                                                    "brand-Id", request.getFunctionParam7());
             } else if (request.getFunctionName().equals("SALESREQUESTEXEC")) {
                 LOG.debug("[jiring fake server] SALESREQUESTEXEC detected");
                 response = jiringProxy.salesRequestExec(request.getFunctionParam1(), false);

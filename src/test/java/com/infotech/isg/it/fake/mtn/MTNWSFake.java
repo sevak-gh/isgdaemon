@@ -46,14 +46,15 @@ public class MTNWSFake {
         String command = request.getCommand();
         String[] items = command.split(":");
         String trId = request.getParameterValue("ext_tid");
+        String channel = request.getParameterValue("ext_id");
         // check command
         if (items[0].equals("pay")) {
             if (items[1].equals("b")) {
                 // pay-bill
-                return mtnService.billPayment(items[2], Integer.parseInt(items[3]), Long.parseLong(trId.substring(4, trId.length())));
+                return mtnService.billPayment(items[2], Integer.parseInt(items[3]), Long.parseLong(trId.substring(4, trId.length())), channel);
             } else if (items[1].equals("d")) {
                 // bulk transfer
-                return mtnService.bulkTransfer(items[2], Integer.parseInt(items[3]), Long.parseLong(trId.substring(4, trId.length())));
+                return mtnService.bulkTransfer(items[2], Integer.parseInt(items[3]), Long.parseLong(trId.substring(4, trId.length())), channel);
             } else {
                 throw new UnsupportedOperationException("requested operation not supported");
             }
@@ -67,16 +68,16 @@ public class MTNWSFake {
             if (items.length > 3) {
                 if (items[3].startsWith("19")) {
                     // wow
-                    return mtnService.wow(items[0], Integer.parseInt(items[1]), Long.parseLong(trId.substring(4, trId.length())));
+                    return mtnService.wow(items[0], Integer.parseInt(items[1]), Long.parseLong(trId.substring(4, trId.length())), channel);
                 } else if (items[3].startsWith("43")) {
                     // gprs
-                    return mtnService.gprs(items[0], Integer.parseInt(items[1]), Long.parseLong(trId.substring(4, trId.length())));
+                    return mtnService.gprs(items[0], Integer.parseInt(items[1]), Long.parseLong(trId.substring(4, trId.length())), channel);
                 } else {
                     throw new UnsupportedOperationException("requested operation not supported");
                 }
             } else {
                 // topup, pre-wimax, post-wimax
-                return mtnService.recharge(items[0], Integer.parseInt(items[1]), Long.parseLong(trId.substring(4, trId.length())));
+                return mtnService.recharge(items[0], Integer.parseInt(items[1]), Long.parseLong(trId.substring(4, trId.length())), channel);
             }
         }
     }

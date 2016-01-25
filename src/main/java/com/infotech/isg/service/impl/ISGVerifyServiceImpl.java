@@ -92,7 +92,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         // get MCI transactions set for STF, waiting to be verified
         List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.MCI_ID);
 
-        if (transactions == null) {
+        if ((transactions == null) || (transactions.size() == 0)) {
             // nothing to be verified
             AUDITLOG.info("no MCI transaction to verify");
             return;
@@ -153,7 +153,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         // get MTN transactions set for STF, waiting to be verified
         List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.MTN_ID);
 
-        if (transactions == null) {
+        if ((transactions == null) || (transactions.size() == 0)) {
             // nothing to be verified
             AUDITLOG.info("no MTN transaction to verify");
             return;
@@ -221,7 +221,7 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
         // get Rightel transactions set for STF, waiting to be verified
         List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.RIGHTEL_ID);
 
-        if (transactions == null) {
+        if ((transactions == null) || (transactions.size() == 0)) {
             // nothing to be verified
             AUDITLOG.info("no Rightel transaction to verify");
             return;

@@ -63,6 +63,7 @@ public class MTNBalanceIT extends AbstractTestNGSpringContextTests {
                             + "MCI1000000 = 0, MCI1000000Timestamp = now(),"
                             + "MTN = 0, MTNTimestamp = now(),"
                             + "Jiring = 0, JiringTimestamp = now()");
+        JdbcTestUtils.deleteFromTables(jdbcTemplate, "info_topup_balance_log");
     }
 
     @AfterMethod
@@ -80,42 +81,42 @@ public class MTNBalanceIT extends AbstractTestNGSpringContextTests {
         String mtnResultCode = "0";
         MTNProxy mtnService = new MTNProxy() {
             @Override
-            public MTNProxyResponse recharge(String consumer, int amount, long trId) {
+            public MTNProxyResponse recharge(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("recharge not supported");
             }
 
             @Override
-            public MTNProxyResponse billPayment(String consumer, int amount, long trId) {
+            public MTNProxyResponse billPayment(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("bill payment not supported");
             }
 
             @Override
-            public MTNProxyResponse bulkTransfer(String consumer, int amount, long trId) {
+            public MTNProxyResponse bulkTransfer(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("bulk transafer not supported");
             }
 
             @Override
-            public MTNProxyResponse wow(String consumer, int amount, long trId) {
+            public MTNProxyResponse wow(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("wow not supported");
             }
 
             @Override
-            public MTNProxyResponse postPaidWimax(String consumer, int amount, long trId) {
+            public MTNProxyResponse postPaidWimax(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("post wimax not supported");
             }
 
             @Override
-            public MTNProxyResponse prePaidWimax(String consumer, int amount, long trId) {
+            public MTNProxyResponse prePaidWimax(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("pre wimax not supported");
             }
 
             @Override
-            public MTNProxyResponse gprs(String consumer, int amount, long trId) {
+            public MTNProxyResponse gprs(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("gprs not supported");
             }
 
             @Override
-            public MTNProxyResponse gprsCombo(String consumer, int amount, long trId, int profileId) {
+            public MTNProxyResponse gprsCombo(String consumer, int amount, long trId, int profileId, String channel) {
                 throw new UnsupportedOperationException("gprs combo not supported");
             }
 
@@ -156,42 +157,42 @@ public class MTNBalanceIT extends AbstractTestNGSpringContextTests {
         String mtnResultCode = "0";
         MTNProxy mtnService = new MTNProxy() {
             @Override
-            public MTNProxyResponse recharge(String consumer, int amount, long trId) {
+            public MTNProxyResponse recharge(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("recharge not supported");
             }
 
             @Override
-            public MTNProxyResponse billPayment(String consumer, int amount, long trId) {
+            public MTNProxyResponse billPayment(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("bill payment not supported");
             }
 
             @Override
-            public MTNProxyResponse bulkTransfer(String consumer, int amount, long trId) {
+            public MTNProxyResponse bulkTransfer(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("bulk transafer not supported");
             }
 
             @Override
-            public MTNProxyResponse wow(String consumer, int amount, long trId) {
+            public MTNProxyResponse wow(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("wow not supported");
             }
 
             @Override
-            public MTNProxyResponse postPaidWimax(String consumer, int amount, long trId) {
+            public MTNProxyResponse postPaidWimax(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("post wimax not supported");
             }
 
             @Override
-            public MTNProxyResponse prePaidWimax(String consumer, int amount, long trId) {
+            public MTNProxyResponse prePaidWimax(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("pre wimax not supported");
             }
 
             @Override
-            public MTNProxyResponse gprs(String consumer, int amount, long trId) {
+            public MTNProxyResponse gprs(String consumer, int amount, long trId, String channel) {
                 throw new UnsupportedOperationException("gprs not supported");
             }
 
             @Override
-            public MTNProxyResponse gprsCombo(String consumer, int amount, long trId, int profileId) {
+            public MTNProxyResponse gprsCombo(String consumer, int amount, long trId, int profileId, String channel) {
                 throw new UnsupportedOperationException("gprs combo not supported");
             }
 
