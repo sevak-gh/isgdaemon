@@ -16,6 +16,10 @@ import com.infotech.isg.proxy.mtn.MTNProxyResponse;
 import com.infotech.isg.proxy.rightel.RightelProxy;
 import com.infotech.isg.proxy.rightel.RightelProxyImpl;
 import com.infotech.isg.proxy.rightel.RightelProxyInquiryChargeResponse;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxy;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxyImpl;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxyGetTokenResponse;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxyChargeStatusInqueryResponse;
 
 import java.util.Date;
 import java.util.List;
@@ -79,6 +83,18 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
 
     @Value("${rightel.namespace}")
     private String rightelNamespace;
+
+    @Value("${mcipinless.url}")
+    private String mciPinLessUrl;
+
+    @Value("${mcipinless.username}")
+    private String mciPinLessUsername;
+
+    @Value("${mcipinless.password}")
+    private String mciPinLessPassword;
+
+    @Value("${mcipinless.namespace}")
+    private String mciPinLessNamespace;
 
     @Autowired
     public ISGVerifyServiceImpl(TransactionRepository transactionRepository) {
@@ -255,4 +271,78 @@ public class ISGVerifyServiceImpl implements ISGVerifyService {
             }
         }
     }        
+
+    @Override
+    @Transactional
+    public void mciPinlessVerify() {
+        // get MCIPinless transactions set for STF, waiting to be verified
+        List<Transaction> transactions = transactionRepository.findByStfProvider(1, Operator.MCI_PINLESS_ID);
+
+        if ((transactions == null) || (transactions.size() == 0)) {
+            // nothing to be verified
+            AUDITLOG.info("no MCIPinless transaction to verify");
+            return;
+        }
+
+        MCIPinLessProxy mciPinLessProxy = new MCIPinLessProxyImpl(mciPinLessUrl, mciPinLessUsername, mciPinLessPassword, mciPinLessNamespace);
+        for (Transaction transaction : transactions) {
+
+            if (transaction.getOperatorTId() == null) {
+                // operator tid not received, can not be verified
+                LOG.error("invalid operator tid from MCIPinless to verify({},{}),  can not be verifiedtry again", 
+                            transaction.getConsumer(), 
+                            transaction.getId());
+                    AUDITLOG.info("MCIPinless recharge verify({},{}) failed, invalid tid, can not be verified", 
+                            transaction.getConsumer(), 
+                            transaction.getId());
+                    continue;
+            }
+
+            try {
+                MCIPinLessProxyGetTokenResponse getTokenResponse = mciPinLessProxy.getToken();
+                if (getTokenResponse.getToken() == null) {
+                    LOG.error("invalid token from MCIPinless to verify({},{}), try again", 
+                                transaction.getConsumer(), 
+                                transaction.getId());
+                    AUDITLOG.info("MCIPinless recharge verify({},{}) failed, no token, try again", 
+                                transaction.getConsumer(), 
+                                transaction.getId());
+                    continue;
+                }
+                MCIPinLessProxyChargeStatusInqueryResponse response = mciPinLessProxy.chargeStatusInquery(getTokenResponse.getToken(),
+                                                                                                          transaction.getConsumer(),
+                                                                                                          transaction.getOperatorTId(),
+                                                                                                          transaction.getBankCode());
+
+                if (response.getCode().equals("1")) {
+                    // topup was ok
+                    transaction.setStf(2);
+                    transaction.setOperatorResponseCode(0);
+                    transactionRepository.save(transaction);
+                    AUDITLOG.info("MCIPinless recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
+                                  transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                                  transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+                } else if (response.getCode().equals("0")) {
+                    // top was nok
+                    transaction.setStf(3);
+                    transaction.setOperatorResponseCode(1000);
+                    transactionRepository.save(transaction);
+                    AUDITLOG.info("MCIPinless recharge verify[{},{}] resolved: [STF={}, code={}, serial={}]",
+                                  transaction.getConsumer(), transaction.getId(), transaction.getStf(),
+                                  transaction.getOperatorResponseCode(), transaction.getOperatorTId());
+
+                } else {
+                    // invalid inquiry response
+                    LOG.debug("MCIPinless recharge verify[{},{}] reponse not successful, try again",
+                              transaction.getConsumer(), transaction.getId());
+                    AUDITLOG.info("MCIPinless recharge verify({},{}) failed, try again", transaction.getConsumer(), transaction.getId());
+                }
+            } catch (ProxyAccessException e) {
+                LOG.error("error to VERIFY MCIPinless recharge({},{}), try again", transaction.getConsumer(), transaction.getId(), e);
+                AUDITLOG.info("MCIPinless recharge verify({},{}) failed, connection error, try again", 
+                                transaction.getConsumer(), 
+                                transaction.getId());
+            }
+        }
+    }
 }

@@ -10,4 +10,5 @@ public interface ISGVerifyService {
     public void mtnVerify();
     public void jiringVerify();
     public void rightelVerify();
+    public void mciPinlessVerify();
 }

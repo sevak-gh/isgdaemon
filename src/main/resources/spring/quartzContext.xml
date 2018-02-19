@@ -28,6 +28,11 @@
         <property name="targetMethod" value="getRightelBalance" />
     </bean>
 
+    <bean id="mciPinLessBalanceJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGBalanceService" />
+        <property name="targetMethod" value="getMCIPinLessBalance" />
+    </bean>
+
     <bean id="mciBalanceCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="mciBalanceJob" />
         <property name="cronExpression" value="${isg.balance.schedule}" />
@@ -45,6 +50,11 @@
 
     <bean id="rightelBalanceCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="rightelBalanceJob" />
+        <property name="cronExpression" value="${isg.balance.schedule}" />
+    </bean>
+
+    <bean id="mciPinLessBalanceCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="mciPinLessBalanceJob" />
         <property name="cronExpression" value="${isg.balance.schedule}" />
     </bean>
 
@@ -110,6 +120,11 @@
         <property name="targetMethod" value="rightelVerify" />
     </bean>
 
+    <bean id="mciPinlessVerifyJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="ISGVerifyService" />
+        <property name="targetMethod" value="mciPinlessVerify" />
+    </bean>
+
     <bean id="mciVerifyCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
         <property name="jobDetail" ref="mciVerifyJob" />
         <property name="cronExpression" value="${isg.stf.schedule}" />
@@ -130,6 +145,11 @@
         <property name="cronExpression" value="${isg.stf.schedule}" />
     </bean>
 
+    <bean id="mciPinlessVerifyCronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="mciPinlessVerifyJob" />
+        <property name="cronExpression" value="${isg.stf.schedule}" />
+    </bean>
+
     <bean  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
         <property name="jobDetails">
             <list>
@@ -137,6 +157,7 @@
                 <ref bean="mtnBalanceJob" />
                 <ref bean="jiringBalanceJob" />
                 <ref bean="rightelBalanceJob" />
+                <ref bean="mciPinLessBalanceJob" />
                 <ref bean="mciStatusJob" />
                 <ref bean="mtnStatusJob" />
                 <ref bean="jiringStatusJob" />
@@ -145,6 +166,7 @@
                 <ref bean="mtnVerifyJob" />
                 <ref bean="jiringVerifyJob" />
                 <ref bean="rightelVerifyJob" />
+                <ref bean="mciPinlessVerifyJob" />
           </list>
         </property>
  
@@ -154,6 +176,7 @@
                 <ref bean="mtnBalanceCronTrigger" />
                 <ref bean="jiringBalanceCronTrigger" />
                 <ref bean="rightelBalanceCronTrigger" />
+                <ref bean="mciPinLessBalanceCronTrigger" />
                 <ref bean="mciStatusCronTrigger" />
                 <ref bean="mtnStatusCronTrigger" />
                 <ref bean="jiringStatusCronTrigger" />
@@ -162,6 +185,7 @@
                 <ref bean="mtnVerifyCronTrigger" />
                 <ref bean="jiringVerifyCronTrigger" />
                 <ref bean="rightelVerifyCronTrigger" />
+                <ref bean="mciPinlessVerifyCronTrigger" />
           </list>
         </property>
     </bean>

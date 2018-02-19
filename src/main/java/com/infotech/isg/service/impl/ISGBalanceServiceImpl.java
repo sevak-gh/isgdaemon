@@ -20,6 +20,11 @@ import com.infotech.isg.proxy.jiring.TCSResponse;
 import com.infotech.isg.proxy.rightel.RightelProxy;
 import com.infotech.isg.proxy.rightel.RightelProxyImpl;
 import com.infotech.isg.proxy.rightel.RightelProxyGetAccountBalanceResponse;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxy;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxyImpl;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxyGetTokenResponse;
+import com.infotech.isg.proxy.mcipinless.MCIPinLessProxyRemainCreditInquiryResponse;
+
 
 import java.util.List;
 import java.util.Arrays;
@@ -103,6 +108,18 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
 
     @Value("${rightel.namespace}")
     private String rightelNamespace;
+
+    @Value("${mcipinless.url}")
+    private String mciPinLessUrl;
+
+    @Value("${mcipinless.username}")
+    private String mciPinLessUsername;
+
+    @Value("${mcipinless.password}")
+    private String mciPinLessPassword;
+
+    @Value("${mcipinless.namespace}")
+    private String mciPinLessNamespace;
 
     @Autowired
     public ISGBalanceServiceImpl(BalanceRepository balanceRepository, BalanceLogRepository balanceLogRepository) {
@@ -323,6 +340,50 @@ public class ISGBalanceServiceImpl implements ISGBalanceService {
         } catch (ProxyAccessException e) {
             LOG.error("error to get Rightel balance, try again", e);
             AUDITLOG.info("Rightel get balance failed");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void getMCIPinLessBalance() {
+        MCIPinLessProxy mciPinLessProxy = new MCIPinLessProxyImpl(mciPinLessUrl, mciPinLessUsername, mciPinLessPassword, mciPinLessNamespace);
+
+        try {
+            MCIPinLessProxyGetTokenResponse tokenResponse = mciPinLessProxy.getToken();
+            if ((tokenResponse == null)
+                || (tokenResponse.getToken() == null)) {
+                LOG.error("invalid GetToken response from MCIPinLess for balance, try again");
+                return;
+            }
+
+            String token = tokenResponse.getToken();
+            MCIPinLessProxyRemainCreditInquiryResponse balanceResponse = mciPinLessProxy.remainCreditInquiry(token);
+            if ((balanceResponse == null)
+                || (balanceResponse.getResponse() == null)
+                || (balanceResponse.getResponse().size() < 2)
+                || (balanceResponse.getCode() == null)
+                || (balanceResponse.getDetail() == null)) {
+                LOG.error("invalid remainCreditInquiry response from MCIPinLess, try again");
+                return;
+            }
+
+            if (!balanceResponse.getCode().equals("0")) {
+                LOG.debug("MCIPinLess responds error({}) for remainCreditInquiry", balanceResponse.getCode());
+                return;
+            }
+
+            long balance = Long.valueOf(balanceResponse.getDetail());
+            balanceRepository.updateMciPinLess(balance, new Date());
+            AUDITLOG.info("MCIPinLess get balance: {}", balance);
+
+            BalanceLog balanceLog = new BalanceLog();
+            balanceLog.setMciPinLess(balance);
+            balanceLog.setMciPinLessTimestamp(new Date());
+            balanceLogRepository.save(balanceLog);
+
+        } catch (ProxyAccessException e) {
+            LOG.error("error to get MCIPinLess balance, try again", e);
+            return;
         }
     }
 }
